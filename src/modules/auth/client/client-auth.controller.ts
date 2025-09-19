@@ -4,9 +4,8 @@ import { ClientAuthService } from './client-auth.service'
 import { ClientLoginDto, ClientRegisterDto } from './dto/client-auth.dto'
 import { AuthGuard } from '@nestjs/passport'
 import { setCookieHttpOnly } from 'src/common/utils/cookie.util'
-import { CurrentUser } from 'src/common/decorators/current-user.decorator'
 
-@Controller('client/auth')
+@Controller(`/auth`)
 export class ClientAuthController {
   constructor(private readonly clientAuthService: ClientAuthService) {}
 

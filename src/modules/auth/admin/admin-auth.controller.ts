@@ -4,8 +4,9 @@ import { AdminAuthService } from './admin-auth.service'
 import { AdminLoginDto } from './dto/admin-auth.dto'
 import { AuthGuard } from '@nestjs/passport'
 import { setCookieHttpOnly } from 'src/common/utils/cookie.util'
+import { ADMIN_API_PREFIX } from 'src/common/constants/api.constant'
 
-@Controller('admin/auth')
+@Controller(`${ADMIN_API_PREFIX}/auth`)
 export class AdminAuthController {
   constructor(private readonly adminAuthService: AdminAuthService) {}
 
