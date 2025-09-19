@@ -12,4 +12,19 @@ export class EnvSchema {
 
   @IsString()
   DATABASE_URL: string
+
+  @IsString()
+  JWT_SECRET: string
+
+  @IsString()
+  JWT_REFRESH_SECRET: string
+
+  @IsString()
+  JWT_EXPIRES_IN: string
+
+  @IsString()
+  JWT_REFRESH_EXPIRES_IN: string
+
+  @IsString()
+  FRONTEND_CORS_ORIGIN: string
 }
