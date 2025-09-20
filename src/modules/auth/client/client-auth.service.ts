@@ -20,13 +20,11 @@ export class ClientAuthService {
     const existingUser = await this.prisma.user.findUnique({
       where: { email: registerDto.email },
     });
-
     if (existingUser) {
       throw new ConflictException('Email already exists');
     }
 
     const passwordHash = await bcrypt.hash(registerDto.password, 10);
-
     const user = await this.prisma.user.create({
       data: {
         fullName: registerDto.fullName,
@@ -53,7 +51,6 @@ export class ClientAuthService {
       type: 'client',
       role: UserRole.STUDENT,
     };
-
     const tokens = await this.jwtAuthService.generateTokenPair(payload);
 
     return {
@@ -79,10 +76,13 @@ export class ClientAuthService {
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
       user: {
-        id: user.id,
-        email: user.email,
         fullName: user.fullName,
+        email: user.email,
         role: user.role,
+        emailVerified: user.emailVerified,
+        avatarUrl: user.avatarUrl,
+        status: user.status,
+        country: user.country,
       },
     };
   }
@@ -131,12 +131,12 @@ export class ClientAuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Email not found');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Password is incorrect');
     }
 
     if (user.status !== 'active') {

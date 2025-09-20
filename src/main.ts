@@ -7,9 +7,12 @@ import { DocumentBuilder } from '@nestjs/swagger';
 import { SWAGGER_DARK_CSS } from './common/constants/swagger.constant';
 import { LoggingInterceptor } from './shared/logging/logging.interceptor';
 import { LoggingService } from './shared/logging/logging.service';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  app.use(cookieParser());
 
   app.setGlobalPrefix(API_PREFIX);
   
