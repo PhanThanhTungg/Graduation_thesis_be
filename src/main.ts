@@ -5,6 +5,9 @@ import { API_PREFIX } from './common/constants/api.constant';
 import { SwaggerModule } from '@nestjs/swagger';
 import { DocumentBuilder } from '@nestjs/swagger';
 import { SWAGGER_DARK_CSS } from './common/constants/swagger.constant';
+import { LoggingInterceptor } from './shared/logging/logging.interceptor';
+import { LoggingService } from './shared/logging/logging.service';
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
@@ -23,6 +26,7 @@ async function bootstrap() {
   }));
 
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+  app.useGlobalInterceptors(new LoggingInterceptor(app.get(LoggingService)));
 
   // Swagger documentation 
   if (process.env.NODE_ENV !== 'production') {

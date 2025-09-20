@@ -1,24 +1,18 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { Controller, Get, Post, Body, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
+import { TestService } from './test.service';
+import { LoggingService } from '../shared/logging/logging.service';
 
 @Controller('test')
 export class TestController {
+  constructor(
+    private readonly testService: TestService,
+    private readonly loggingService: LoggingService,
+  ) {}
 
-  @Get("/admin-login")
-  @UseGuards(AuthGuard('admin-jwt'))
-  async test(@CurrentUser() admin: any) {
-    return {
-      message: 'Test successful',
-      user: admin,
-    }
-  }
-
-  @Get("/client-login")
-  @UseGuards(AuthGuard('client-jwt'))
-  async testClient() {
-    return {
-      message: 'Test successful',
-    }
+  @Get('slow')
+  async getSlow() {
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    this.loggingService.error('Slow request completed');
+    return { message: 'Slow request completed' };
   }
 }
