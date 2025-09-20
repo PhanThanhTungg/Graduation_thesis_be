@@ -1,8 +1,7 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Get, Req, Res } from '@nestjs/common'
+import { Controller, Post, Body, Req, Res } from '@nestjs/common'
 import { Request, Response } from 'express'
 import { AdminAuthService } from './admin-auth.service'
 import { AdminLoginDto } from './dto/admin-auth.dto'
-import { AuthGuard } from '@nestjs/passport'
 import { setCookieHttpOnly } from 'src/common/utils/cookie.util'
 import { ADMIN_API_PREFIX } from 'src/common/constants/api.constant'
 
@@ -30,7 +29,6 @@ export class AdminAuthController {
   }
 
   @Post('logout')
-  @UseGuards(AuthGuard('admin-jwt'))
   async logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('admin_refresh_token')
     return { message: 'Logged out successfully' }

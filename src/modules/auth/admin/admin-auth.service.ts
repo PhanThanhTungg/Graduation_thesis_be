@@ -93,14 +93,14 @@ export class AdminAuthService {
     });
 
     if (!admin) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Email not found');
     }
 
     const isPasswordValid = await bcrypt.compare(password, admin.passwordHash);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Password is incorrect');
     }
-
-    return admin;
+    const { passwordHash, ...adminWithoutPassword } = admin;
+    return adminWithoutPassword;
   }
 }
