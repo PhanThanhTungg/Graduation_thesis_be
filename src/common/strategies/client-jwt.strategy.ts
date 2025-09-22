@@ -33,7 +33,8 @@ export class ClientJwtStrategy extends PassportStrategy(Strategy, 'client-jwt') 
         emailVerified: true,
         avatarUrl: true,
         status: true,
-        country: true
+        country: true,
+        teacherSetting: true,
       },
     })
 

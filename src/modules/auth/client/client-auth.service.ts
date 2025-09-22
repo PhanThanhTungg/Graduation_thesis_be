@@ -8,12 +8,14 @@ import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { JwtAuthService, JwtPayload } from '../../../shared/jwt/jwt.service';
 import { ClientLoginDto, ClientRegisterDto } from './dto/client-auth.dto';
 import { UserRole } from 'src/common/enums/common.enum';
+import { LoggingService } from 'src/shared/logging/logging.service';
 
 @Injectable()
 export class ClientAuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtAuthService: JwtAuthService,
+    private readonly loggingService: LoggingService,
   ) {}
 
   async register(registerDto: ClientRegisterDto) {
@@ -30,7 +32,7 @@ export class ClientAuthService {
         fullName: registerDto.fullName,
         email: registerDto.email,
         passwordHash,
-        role: UserRole.STUDENT,
+        role: UserRole.student,
         country: registerDto.country,
       },
       select: {
@@ -49,7 +51,7 @@ export class ClientAuthService {
       sub: user.id,
       email: user.email,
       type: 'client',
-      role: UserRole.STUDENT,
+      role: UserRole.student,
     };
     const tokens = await this.jwtAuthService.generateTokenPair(payload);
 

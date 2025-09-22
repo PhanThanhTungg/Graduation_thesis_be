@@ -10,3 +10,4 @@ export class AdminLoginDto {
   @ApiProperty({ description: 'The password of the admin'})
   password: string
 }
+
