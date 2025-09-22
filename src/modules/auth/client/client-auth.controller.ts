@@ -1,17 +1,20 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Get, Req, Res, UnauthorizedException } from '@nestjs/common'
 import { Request, Response } from 'express'
 import { ClientAuthService } from './client-auth.service'
-import { ClientLoginDto, ClientRegisterDto } from './dto/client-auth.dto'
+import { ClientLoginDto, ClientRegisterDto, VerifyEmailDto } from './dto/client-auth.dto'
 import { AuthGuard } from '@nestjs/passport'
 import { setCookieHttpOnly } from 'src/common/utils/cookie.util'
-import { ApiBody, ApiOperation } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { LoggingService } from 'src/shared/logging/logging.service'
+import { CurrentUser } from 'src/common/decorators/current-user.decorator'
+import { currentClientUser } from 'src/common/strategies/client-jwt.strategy'
 
 @Controller(`/auth`)
+@ApiTags('Client Authentication')
 export class ClientAuthController {
   constructor(
     private readonly clientAuthService: ClientAuthService,
-    private readonly loggingService: LoggingService,
+    private readonly loggingService: LoggingService
   ) {}
 
   @Post('register')
@@ -50,5 +53,20 @@ export class ClientAuthController {
   async logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('client_refresh_token')
     return { message: 'Logged out successfully' }
+  }
+
+  @Post('send-verification-email')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Send email verification' })
+  @UseGuards(AuthGuard('client-jwt'))
+  async sendVerificationEmail(@CurrentUser() user: currentClientUser) {
+    return await this.clientAuthService.sendVerificationEmail(user)
+  }
+
+  @Post('verify-email')
+  @ApiOperation({ summary: 'Verify email with token' })
+  @ApiBody({ type: VerifyEmailDto })
+  async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
+    return await this.clientAuthService.verifyEmail(verifyEmailDto)
   }
 }

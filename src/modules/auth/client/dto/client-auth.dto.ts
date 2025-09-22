@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger"
-import { IsEmail, IsString, Matches, MinLength } from "class-validator"
+import { IsEmail, IsString, Matches, MinLength, IsNotEmpty } from "class-validator"
 
 export class ClientLoginDto {
   @IsEmail()
@@ -31,4 +31,12 @@ export class ClientRegisterDto {
   @IsString()
   @ApiProperty({ description: 'The country of the client is got from API'})
   country: string
+}
+
+
+export class VerifyEmailDto {
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ description: 'The verification token' })
+  token: string
 }

@@ -28,7 +28,6 @@ export class EnvSchema {
   @IsString()
   FRONTEND_CORS_ORIGIN: string
 
-  // Logging config
   @IsOptional()
   @IsString()
   LOG_LEVEL?: string = 'info'
@@ -47,4 +46,23 @@ export class EnvSchema {
   @IsOptional()
   @IsString()
   LOG_FILE_PATH?: string
+
+  @IsString()
+  EMAIL_HOST: string = 'smtp.gmail.com'
+
+  @IsNumber()
+  EMAIL_PORT: number = 587
+
+  @IsString()
+  EMAIL_USER: string
+
+  @IsString()
+  EMAIL_PASS: string
+
+  @IsString()
+  FRONTEND_URL: string
+
+  @IsOptional()
+  @IsString()
+  APP_NAME?: string = 'Aikabis'
 }
