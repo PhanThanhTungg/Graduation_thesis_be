@@ -38,6 +38,9 @@ export class ClientJwtStrategy extends PassportStrategy(Strategy, 'client-jwt') 
 
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
+      include: {
+        teacherSetting: true,
+      },
     })
 
     if (!user) {

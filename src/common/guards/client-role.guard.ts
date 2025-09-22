@@ -1,22 +1,19 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common'
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException, SetMetadata } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { UserRole } from 'src/common/enums/common.enum'
 
-export const ClientRoles = (...roles: UserRole[]) => {
-  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-    Reflect.defineMetadata('client-roles', roles, target, propertyKey)
-  }
-}
+export const CLIENT_ROLES_KEY = 'client-roles'
+export const ClientRoles = (...roles: UserRole[]) => SetMetadata(CLIENT_ROLES_KEY, roles)
 
 @Injectable()
 export class ClientRoleGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.get<UserRole[]>(
-      'client-roles',
+    const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(CLIENT_ROLES_KEY, [
       context.getHandler(),
-    )
+      context.getClass(),
+    ])
 
     if (!requiredRoles) {
       return true
@@ -28,6 +25,7 @@ export class ClientRoleGuard implements CanActivate {
     if (!user || !user.role) {
       throw new ForbiddenException('User role not found')
     }
+
 
     const hasRole = requiredRoles.includes(user.role)
 

@@ -1,10 +1,10 @@
-import { Controller, Get, Post, Body, HttpException, HttpStatus, NotFoundException, UseGuards } from '@nestjs/common';
+import { Controller, Get,UseGuards } from '@nestjs/common';
 import { LoggingService } from '../shared/logging/logging.service';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import { ClientJwtStrategy } from 'src/common/strategies/client-jwt.strategy';
 import { ApiBearerAuth } from '@nestjs/swagger';
-import { AdminJwtStrategy } from 'src/common/strategies/admin-jwt.strategy';
 import { AuthGuard } from '@nestjs/passport';
+import { UserRole } from 'src/common/enums/common.enum';
+import { ClientRoleGuard, ClientRoles } from 'src/common/guards/client-role.guard';
 
 @Controller('test')
 export class TestController {
@@ -33,6 +33,14 @@ export class TestController {
   @UseGuards(AuthGuard('admin-jwt'))
   @ApiBearerAuth()
   async getCurrentAdmin(@CurrentUser() user: any) {
+    return user;
+  }
+
+  @Get('role-teacher')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('client-jwt'), ClientRoleGuard)
+  @ClientRoles(UserRole.teacher)
+  async getRoleTeacher(@CurrentUser() user: any) {
     return user;
   }
 }

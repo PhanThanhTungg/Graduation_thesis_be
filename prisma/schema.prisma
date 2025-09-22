@@ -95,7 +95,6 @@ model TeacherSetting {
   userId   String  @unique @map("user_id")
   bio      String?
   headline String?
-  country  String?
   website  String?
   facebook String?
   linkedin String?

@@ -198,7 +198,6 @@ export class ClientAuthService {
     }
   }
 
-
   private generateVerificationToken(): string {
     return randomBytes(32).toString('hex');
   }

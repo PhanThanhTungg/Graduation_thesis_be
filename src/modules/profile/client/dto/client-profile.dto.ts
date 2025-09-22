@@ -32,7 +32,7 @@ export class UpdateClientProfileDto {
   role?: UserRole;
 }
 
-export class UpdateTeacherProfileDto extends UpdateClientProfileDto {
+export class UpdateTeacherProfileDto {
   @ApiPropertyOptional({ description: 'Teacher bio' })
   @IsOptional()
   @IsString()
