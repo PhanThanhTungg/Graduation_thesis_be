@@ -29,7 +29,7 @@ export class EmailService {
     const mailOptions: nodemailer.SendMailOptions = {
       from: `"${this.envService.get('APP_NAME')}" <${this.envService.get('EMAIL_USER')}>`,
       to: email,
-      subject: 'Xác thực email của bạn',
+      subject: 'Verify your email',
       html: getEmailVerificationTemplate(fullName, verificationUrl),
     };
 
@@ -42,3 +42,4 @@ export class EmailService {
     }
   }
 }
+
