@@ -3,11 +3,11 @@ import { IsEmail, IsString, Matches, MinLength, IsNotEmpty } from "class-validat
 
 export class ClientLoginDto {
   @IsEmail()
-  @ApiProperty({ description: 'The email of the client'})
+  @ApiProperty({ description: 'The email of the client', example: 'tung5@gmail.com' })
   email: string
 
   @IsString()
-  @ApiProperty({ description: 'The password of the client'})
+  @ApiProperty({ description: 'The password of the client', example: 'Tt123456@' })
   password: string
 }
 

@@ -5,6 +5,7 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { UserRole } from 'src/common/enums/common.enum';
 import { ClientRoleGuard, ClientRoles } from 'src/common/guards/client-role.guard';
+import { UniversalAuthGuard, UniversalAuth } from 'src/common/guards/universal-auth.guard';
 
 @Controller('test')
 export class TestController {
@@ -42,5 +43,29 @@ export class TestController {
   @ClientRoles(UserRole.teacher)
   async getRoleTeacher(@CurrentUser() user: any) {
     return user;
+  }
+
+  // Test universal auth 
+  @Get('universal-auth')
+  @ApiBearerAuth()
+  @UseGuards(UniversalAuthGuard)
+  async getUniversalAuth(@CurrentUser() user: any) {
+    return {
+      message: 'Universal auth successful',
+      user: user,
+      userType: user.permissions ? 'admin' : 'client'
+    };
+  }
+
+  // Test universal auth with decorator // basic auth guard
+  @Get('universal-auth-decorator')
+  @ApiBearerAuth()
+  @UniversalAuth()
+  async getUniversalAuthDecorator(@CurrentUser() user: any) {
+    return {
+      message: 'Universal auth decorator successful',
+      user: user,
+      userType: user.permissions ? 'admin' : 'client'
+    };
   }
 }
