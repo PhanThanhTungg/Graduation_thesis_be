@@ -6,6 +6,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ProfileModule } from './modules/profile/profile.module';
 import { TestModule } from './test/test.module';
 import { LoggingModule } from './shared/logging/logging.module';
+import { CourseModule } from './modules/course/course.module';
+import { CategoryModule } from './modules/category/category.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { LoggingModule } from './shared/logging/logging.module';
     AuthModule,
     ProfileModule,
     TestModule,
+    CourseModule,
+    CategoryModule,
   ],
   providers: [
   ],
