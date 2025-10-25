@@ -36,6 +36,9 @@ model Admin {
   adminRoleId  String    @map("admin_role_id")
   adminRole    AdminRole @relation(fields: [adminRoleId], references: [id])
 
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
   @@map("admin")
 }
 
@@ -45,6 +48,9 @@ model AdminRole {
   description String?
   admins      Admin[]
   permissions AdminRolePermission[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("admin_role")
 }
@@ -65,6 +71,9 @@ model AdminPermission {
   action  AdminAction
   roles   AdminRolePermission[]
 
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
   @@map("admin_permission")
 }
 
@@ -79,13 +88,15 @@ model User {
   avatarUrl     String?         @map("avatar_url")
   status        Status          @default(active)
   country       String          @db.VarChar(50)
-  createdAt     DateTime        @default(now()) @map("created_at")
-  updatedAt     DateTime        @updatedAt @map("updated_at")
   
   // Relations
   teacherSetting           TeacherSetting?
   courses                  Course[]                @relation("TeacherCourses")
   emailVerificationTokens  EmailVerificationToken[]
+
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime?       @updatedAt @map("updated_at")
+  deletedAt DateTime?    @map("deleted_at")
 
   @@map("user")
 }
@@ -101,6 +112,9 @@ model TeacherSetting {
   youtube  String?
   user     User    @relation(fields: [userId], references: [id])
 
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
   @@map("teacher_setting")
 }
 
@@ -112,6 +126,10 @@ model Category {
   parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children Category[] @relation("CategoryHierarchy")
   courses  Course[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+  deletedAt DateTime?    @map("deleted_at")
 
   @@map("category")
 }
@@ -127,13 +145,15 @@ model Course {
   categoryId          String?           @map("category_id")
   slug                String?
   isPublished         Boolean           @default(false) @map("is_published")
-  createdAt           DateTime          @default(now()) @map("created_at")
-  updatedAt           DateTime?         @updatedAt @map("updated_at")
   
   // Relations
   teacher             User              @relation("TeacherCourses", fields: [teacherId], references: [id])
   category            Category?         @relation(fields: [categoryId], references: [id])
   courseDescription   CourseDescription? @relation(fields: [courseDescriptionId], references: [id])
+
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime?         @updatedAt @map("updated_at")
+  deletedAt DateTime?    @map("deleted_at")
 
   @@map("courses")
 }
