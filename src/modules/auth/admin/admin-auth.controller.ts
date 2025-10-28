@@ -4,6 +4,7 @@ import { AdminAuthService } from './admin-auth.service'
 import { AdminLoginDto } from './dto/admin-auth.dto'
 import { setCookieHttpOnly } from 'src/common/utils/cookie.util'
 import { ADMIN_API_PREFIX } from 'src/common/constants/api.constant'
+import { successResponse } from 'src/common/interfaces/response.interface'
 
 @Controller(`${ADMIN_API_PREFIX}/auth`)
 export class AdminAuthController {
@@ -13,19 +14,29 @@ export class AdminAuthController {
   async login(@Body() loginDto: AdminLoginDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.adminAuthService.login(loginDto)
     setCookieHttpOnly(res, 'admin_refresh_token', result.refreshToken)
-    return {
-      accessToken: result.accessToken,
-      admin: result.admin,
+
+    const response: successResponse = {
+      message: 'Login successfully',
+      data: {
+        accessToken: result.accessToken,
+        admin: result.admin,
+      },
     }
+    return response;
   }
 
   @Post('refresh')
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const result = await this.adminAuthService.refreshToken(req.cookies.admin_refresh_token )
     setCookieHttpOnly(res, 'admin_refresh_token', result.refreshToken)
-    return {
-      accessToken: result.accessToken,
+
+    const response: successResponse = {
+      message: 'Refresh token successfully',
+      data: {
+        accessToken: result.accessToken,
+      },
     }
+    return response;
   }
 
   @Post('logout')

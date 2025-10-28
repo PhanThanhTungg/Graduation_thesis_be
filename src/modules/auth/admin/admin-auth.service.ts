@@ -4,6 +4,7 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { JwtAuthService, JwtPayload } from '../../../shared/jwt/jwt.service';
 import { AdminLoginDto } from './dto/admin-auth.dto';
+import { successResponse } from 'src/common/interfaces/response.interface';
 
 @Injectable()
 export class AdminAuthService {

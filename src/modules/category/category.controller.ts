@@ -50,8 +50,6 @@ export class CategoryController {
   @Public()
   @ApiOperation({ summary: 'Get all categories' })
   @ApiQuery({ name: 'keySearch', type: String, required: false })
-  @ApiQuery({ name: 'page', type: Number, required: false })
-  @ApiQuery({ name: 'limit', type: Number, required: false })
   @ApiQuery({ name: 'sortField', type: String, required: false })
   @ApiQuery({ name: 'sortOrder', type: String, required: false })
   async getAllCategories(@Query() filter: fullObjectFilter) {

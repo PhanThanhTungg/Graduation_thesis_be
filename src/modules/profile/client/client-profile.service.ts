@@ -10,6 +10,7 @@ import {
 } from './dto/client-profile.dto';
 import { UserRole } from '../../../common/enums/common.enum';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
+import { successResponse } from 'src/common/interfaces/response.interface';
 
 @Injectable()
 export class ClientProfileService {
@@ -18,7 +19,7 @@ export class ClientProfileService {
   async updateProfile(
     user: currentClientUser,
     updateDto: UpdateClientProfileDto,
-  ): Promise<any> {
+  ): Promise<successResponse> {
     if (updateDto.email) {
       const existingUser = await this.prisma.user.findFirst({
         where: {
@@ -52,15 +53,18 @@ export class ClientProfileService {
         country: true,
       }
     });
-
-    return updatedUser;
+    const response: successResponse = {
+      message: 'Update profile successfully',
+      data: updatedUser
+    };
+    return response;
   }
 
   async updateTeacherProfile(
     user: currentClientUser,
     updateDto: UpdateTeacherProfileDto,
-  ): Promise<any> {
-    return this.prisma.teacherSetting.upsert({
+  ): Promise<successResponse> {
+    const updatedTeacherSetting = await this.prisma.teacherSetting.upsert({
       where: { userId: user.id },
       create: {
         userId: user.id,
@@ -68,5 +72,11 @@ export class ClientProfileService {
       },
       update: updateDto,
     });
+
+    const response: successResponse = {
+      message: 'Update teacher profile successfully',
+      data: updatedTeacherSetting
+    };
+    return response;
   }
 }
