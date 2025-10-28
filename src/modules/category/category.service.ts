@@ -2,9 +2,10 @@ import { BadRequestException, NotFoundException, Injectable } from '@nestjs/comm
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 import { generateUniqueSlug } from 'src/common/utils/slug.util';
-import { fullObjectFilter } from 'src/common/interfaces/objectFilter.interface';
+import { categoryFilter } from 'src/common/interfaces/objectFilter.interface';
 import { LoggingService } from 'src/shared/logging/logging.service';
 import { Category } from '@prisma/client';
+import { successResponse } from 'src/common/interfaces/response.interface';
 
 @Injectable()
 export class CategoryService {
@@ -23,11 +24,16 @@ export class CategoryService {
     if (!category) {
       throw new NotFoundException('Category is not existed');
     }
-    return category;
+
+    const response: successResponse = {
+      message: 'Get category successfully',
+      data: category
+    };
+    return response;
   }
   
-  async getAllCategories(filter: fullObjectFilter) {
-    const { keySearch, page = 1, limit = 10, sortField = 'createdAt', sortOrder = 'asc' } = filter;
+  async getAllCategories(filter: categoryFilter) {
+    const { keySearch, sortField = 'createdAt', sortOrder = 'asc' } = filter;
     
     const categories = await this.prisma.category.findMany({
       where: {
@@ -41,23 +47,15 @@ export class CategoryService {
           [sortField]: sortOrder
         }
       }),
-      skip: page && limit ? (page - 1) * +limit : 0,
-      take: +limit,
     });
     
     if(categories.length === 0) throw new NotFoundException('No categories found');
 
-    const totalCategories = await this.prisma.category.count({
-      where: {
-        ...(keySearch && {
-          title: { contains: keySearch, mode: 'insensitive' }
-        }),
-        deletedAt: null
-      }
-    });
-
-    const totalPages = Math.ceil(totalCategories / limit);
-    return { categories: this.getCategoryTree(categories), totalPages };
+    const response: successResponse = {
+      message: 'Get all categories successfully',
+      data: { categories: this.getCategoryTree(categories) }
+    };
+    return response;
     
   }
 
@@ -73,7 +71,12 @@ export class CategoryService {
         slug: generateUniqueSlug(createCategoryData.title),
       }
     });
-    return category;
+
+    const response: successResponse = {
+      message: 'Create category successfully',
+      data: category
+    };
+    return response;
   }
 
   async updateCategory(id: string, updateCategoryData: UpdateCategoryDto) {
@@ -88,13 +91,18 @@ export class CategoryService {
     }
 
     const category = await this.prisma.category.update({
-      where: { id },
+      where: { id , deletedAt: null },
       data: {
         ...updateCategoryData,
         ...(updateCategoryData.title && { slug: generateUniqueSlug(updateCategoryData.title) }),
       }
     });
-    return category;
+
+    const response: successResponse = {
+      message: 'Update category successfully',
+      data: category
+    };
+    return response;
   }
 
   async deleteSoftById(id: string) {
@@ -103,11 +111,40 @@ export class CategoryService {
       throw new NotFoundException('Category is not existed');
     }
 
-    const category = await this.prisma.category.update({
-      where: { id },
+    const childCategories = await this.getAllChildCategoryIds(id);
+    const allCategoryIds = [id, ...childCategories];
+
+    await this.prisma.category.updateMany({
+      where: { 
+        id: { 
+          in: allCategoryIds 
+        } 
+      },
       data: { deletedAt: new Date() }
     });
-    return category;
+
+    const response: successResponse = {
+      message: 'Delete category successfully'
+    };
+    return response;
+  }
+
+  private async getAllChildCategoryIds(parentId: string): Promise<string[]> {
+    const children = await this.prisma.category.findMany({
+      where: { parentId },
+      select: { id: true }
+    });
+
+    if (children.length === 0) {
+      return [];
+    }
+
+    const childIds = children.map(child => child.id);
+    const grandChildIds = await Promise.all(
+      childIds.map(id => this.getAllChildCategoryIds(id))
+    );
+
+    return [...childIds, ...grandChildIds.flat()];
   }
 
   private async checkExistedCategoryById(id?: string) {

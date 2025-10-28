@@ -8,6 +8,7 @@ import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { LoggingService } from 'src/shared/logging/logging.service'
 import { CurrentUser } from 'src/common/decorators/current-user.decorator'
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy'
+import { successResponse } from 'src/common/interfaces/response.interface'
 
 @Controller(`/auth`)
 @ApiTags('Client Authentication')
@@ -23,20 +24,30 @@ export class ClientAuthController {
   async register(@Body() registerDto: ClientRegisterDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.clientAuthService.register(registerDto)
     setCookieHttpOnly(res, 'client_refresh_token', result.refreshToken)
-    return {
-      accessToken: result.accessToken,
-      user: result.user,
+
+    const response: successResponse = {
+      message: 'Register successfully',
+      data: {
+        accessToken: result.accessToken,
+        user: result.user,
+      },
     }
+    return response;
   }
 
   @Post('login')
   async login(@Body() loginDto: ClientLoginDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.clientAuthService.login(loginDto)
     setCookieHttpOnly(res, 'client_refresh_token', result.refreshToken)
-    return {
-      accessToken: result.accessToken,
-      user: result.user,
+
+    const response: successResponse = {
+      message: 'Login successfully',
+      data: {
+        accessToken: result.accessToken,
+        user: result.user,
+      },
     }
+    return response;
   }
 
   @Post('refresh')
@@ -44,9 +55,14 @@ export class ClientAuthController {
     this.loggingService.log(req.cookies)
     const result = await this.clientAuthService.refreshToken(req.cookies.client_refresh_token)
     setCookieHttpOnly(res, 'client_refresh_token', result.refreshToken)
-    return {
-      accessToken: result.accessToken,
+
+    const response: successResponse = {
+      message: 'Refresh token successfully',
+      data: {
+        accessToken: result.accessToken,
+      },
     }
+    return response;
   }
 
   @Post('logout')

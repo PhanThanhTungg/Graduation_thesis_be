@@ -8,13 +8,18 @@ import {
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { JwtAuthService, JwtPayload } from '../../../shared/jwt/jwt.service';
-import { ClientLoginDto, ClientRegisterDto, VerifyEmailDto } from './dto/client-auth.dto';
+import {
+  ClientLoginDto,
+  ClientRegisterDto,
+  VerifyEmailDto,
+} from './dto/client-auth.dto';
 import { UserRole } from 'src/common/enums/common.enum';
 import { LoggingService } from 'src/shared/logging/logging.service';
 import { randomBytes } from 'crypto';
 import { User } from '@prisma/client';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 import { EmailService } from 'src/shared/email/email.service';
+import { successResponse } from 'src/common/interfaces/response.interface';
 
 @Injectable()
 export class ClientAuthService {
@@ -65,7 +70,7 @@ export class ClientAuthService {
     return {
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
-      user: user
+      user: user,
     };
   }
 
@@ -135,7 +140,8 @@ export class ClientAuthService {
   }
 
   async sendVerificationEmail(user: currentClientUser) {
-    if (user.emailVerified) throw new BadRequestException('Email already verified');
+    if (user.emailVerified)
+      throw new BadRequestException('Email already verified');
 
     await this.prisma.emailVerificationToken.deleteMany({
       where: { userId: user.id },
@@ -143,7 +149,7 @@ export class ClientAuthService {
 
     const token = this.generateVerificationToken();
     const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 12); 
+    expiresAt.setHours(expiresAt.getHours() + 12);
 
     await this.prisma.emailVerificationToken.create({
       data: {
@@ -153,21 +159,27 @@ export class ClientAuthService {
       },
     });
 
-    const isSent = await this.emailService.sendEmailVerification(user.email, token, user.fullName);
+    const isSent = await this.emailService.sendEmailVerification(
+      user.email,
+      token,
+      user.fullName,
+    );
     if (!isSent) {
       throw new BadRequestException('Failed to send email verification');
     }
 
-    return {
+    const response: successResponse = {
       message: 'Email verification sent successfully',
     };
+    return response;
   }
 
   async verifyEmail(verifyEmailDto: VerifyEmailDto) {
-    const verificationToken = await this.prisma.emailVerificationToken.findUnique({
-      where: { token: verifyEmailDto.token },
-      include: { user: true },
-    });
+    const verificationToken =
+      await this.prisma.emailVerificationToken.findUnique({
+        where: { token: verifyEmailDto.token },
+        include: { user: true },
+      });
 
     if (!verificationToken) {
       throw new NotFoundException('Invalid verification token');
@@ -177,7 +189,9 @@ export class ClientAuthService {
       await this.prisma.emailVerificationToken.delete({
         where: { id: verificationToken.id },
       });
-      throw new BadRequestException('Token verification has expired. Please request to resend email verification');
+      throw new BadRequestException(
+        'Token verification has expired. Please request to resend email verification',
+      );
     }
 
     if (verificationToken.user.emailVerified) {
@@ -193,9 +207,10 @@ export class ClientAuthService {
       where: { id: verificationToken.id },
     });
 
-    return {
+    const response: successResponse = {
       message: 'Email has been verified successfully',
-    }
+    };
+    return response;
   }
 
   private generateVerificationToken(): string {

@@ -13,3 +13,4 @@ export interface sortFilter {
 }
 
 export interface fullObjectFilter extends objectSearchFilter, paginationFilter, sortFilter {}
+export interface categoryFilter extends objectSearchFilter, sortFilter {}
