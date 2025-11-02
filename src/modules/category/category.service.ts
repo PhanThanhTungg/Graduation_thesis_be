@@ -21,9 +21,6 @@ export class CategoryService {
         deletedAt: null
       }
     });
-    if (!category) {
-      throw new NotFoundException('Category is not existed');
-    }
 
     const response: successResponse = {
       message: 'Get category successfully',
@@ -48,15 +45,12 @@ export class CategoryService {
         }
       }),
     });
-    
-    if(categories.length === 0) throw new NotFoundException('No categories found');
 
     const response: successResponse = {
       message: 'Get all categories successfully',
       data: { categories: this.getCategoryTree(categories) }
     };
     return response;
-    
   }
 
   async createCategory(createCategoryData: CreateCategoryDto) {

@@ -6,7 +6,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ProfileModule } from './modules/profile/profile.module';
 import { TestModule } from './test/test.module';
 import { LoggingModule } from './shared/logging/logging.module';
-import { CourseModule } from './modules/course/course.module';
+import { CourseModule } from './modules/course/client/course-client.module';
 import { CategoryModule } from './modules/category/category.module';
 
 @Module({
