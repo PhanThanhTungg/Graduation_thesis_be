@@ -137,11 +137,11 @@ model Category {
 model Course {
   id                  String            @id @default(uuid())
   title               String            @db.VarChar(255)
-  courseDescriptionId String?           @map("course_description_id")
+  courseDescriptionId String?           @unique @map("course_description_id")
   thumbnailUrl        String?           @map("thumbnail_url") @db.VarChar(255)
   teacherId           String            @map("teacher_id")
   price               Decimal           @default(0) @db.Decimal(10, 2)
-  countStudent        Int?              @map("count_student")
+  countStudent        Int?              @default(0) @map("count_student")
   categoryId          String?           @map("category_id")
   slug                String?
   isPublished         Boolean           @default(false) @map("is_published")
@@ -165,7 +165,7 @@ model CourseDescription {
   requirement          String?
   detail               String?
   suitableParticipant  String?  @map("suitable_participant") // split by comma,
-  courses              Course[]
+  course               Course?
 
   @@map("course_description")
 }
