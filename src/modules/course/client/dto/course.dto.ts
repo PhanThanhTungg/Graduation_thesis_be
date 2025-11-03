@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsOptional, IsString, IsUrl } from "class-validator";
+import { Type } from "class-transformer";
+import { IsArray, IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString, IsUrl, Min, ValidateNested } from "class-validator";
 
 export class CourseDescriptionDto {
   @IsString()
@@ -11,23 +12,25 @@ export class CourseDescriptionDto {
   })
   headline?: string;
 
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
   @IsOptional()
   @ApiProperty({
-    description: 'Target knowledges (comma-separated)',
-    example: 'OOP &&& Templates && STL',
+    description: 'Target knowledges',
+    example: '["OOP", "Templates", "STL"]',
     required: false,
   })
-  targetKnowledges?: string;
+  targetKnowledges?: string[] = [];
 
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
   @IsOptional()
   @ApiProperty({
     description: 'Course requirements',
-    example: 'Basic C++ knowledge required',
+    example: '["Basic C++ knowledge required", "python knowledge required"]',
     required: false,
   })
-  requirement?: string;
+  requirement?: string[] = [];
 
   @IsString()
   @IsOptional()
@@ -38,14 +41,15 @@ export class CourseDescriptionDto {
   })
   detail?: string;
 
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
   @IsOptional()
   @ApiProperty({
-    description: 'Suitable participants (comma-separated)',
-    example: 'Intermediate developers, Software engineers',
+    description: 'Suitable participants',
+    example: '["Intermediate developers", "Software engineers"]',
     required: false,
   })
-  suitableParticipant?: string;
+  suitableParticipant?: string[] = [];
 }
 
 export class CreateCourseDto {
@@ -66,21 +70,14 @@ export class CreateCourseDto {
   })
   thumbnailUrl?: string;
 
-  @IsString()
-  @IsNotEmpty()
-  @ApiProperty({
-    description: 'The teacher ID of the course',
-    example: 'uuid-string',
-  })
-  teacherId: string;
-
-  @IsString()
+  @IsNumber()
+  @Min(0)
   @IsNotEmpty()
   @ApiProperty({
     description: 'The price of the course',
-    example: '99.99',
+    example: 99.99,
   })
-  price: string;
+  price: number;
 
   @IsString()
   @IsNotEmpty()
@@ -89,4 +86,22 @@ export class CreateCourseDto {
     example: 'uuid-string',
   })
   categoryId: string;
+
+  @IsBoolean()
+  @IsOptional()
+  @ApiProperty({
+    description: 'The is published of the course',
+    example: false,
+    required: false,
+    default: false
+  })
+  isPublished?: boolean;
+
+  @ValidateNested()
+  @Type(() => CourseDescriptionDto)
+  @ApiProperty({
+    description: 'The course description',
+    type: CourseDescriptionDto,
+  })
+  courseDescription: CourseDescriptionDto;
 }

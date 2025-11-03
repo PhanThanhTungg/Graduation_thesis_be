@@ -22,6 +22,8 @@ export class CategoryService {
       }
     });
 
+    if(!category) throw new NotFoundException("Category is not existed");
+
     const response: successResponse = {
       message: 'Get category successfully',
       data: category
@@ -54,7 +56,8 @@ export class CategoryService {
   }
 
   async createCategory(createCategoryData: CreateCategoryDto) {
-    const isExistedParentId = await this.checkExistedCategoryById(createCategoryData.parentId);
+    const {parentId} = createCategoryData;
+    const isExistedParentId = parentId ? await this.checkExistedCategoryById(parentId) : true;
     if (!isExistedParentId) {
       throw new BadRequestException('Parent category is not existed');
     }
@@ -79,7 +82,8 @@ export class CategoryService {
       throw new NotFoundException('Category is not existed');
     }
 
-    const isExistedParentId = await this.checkExistedCategoryById(updateCategoryData.parentId);
+    const {parentId} = updateCategoryData;
+    const isExistedParentId = parentId ? await this.checkExistedCategoryById(parentId) : true;
     if (!isExistedParentId) {
       throw new BadRequestException('Parent category is not existed');
     }
@@ -141,11 +145,11 @@ export class CategoryService {
     return [...childIds, ...grandChildIds.flat()];
   }
 
-  private async checkExistedCategoryById(id?: string) {
-    if (!id) return true;
+  async checkExistedCategoryById(id: string) {
     const category = await this.prisma.category.findUnique({
       where: {
-        id
+        id,
+        deletedAt: null
       }
     });
     return !!category;
