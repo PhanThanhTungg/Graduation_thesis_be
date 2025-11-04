@@ -1,6 +1,6 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { CourseService } from './course-client.service';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { UniversalAuthGuard } from 'src/common/guards/universal-auth.guard';
 import { UserRole } from 'src/common/enums/common.enum';
 import {
@@ -22,8 +22,9 @@ import { fullObjectFilter } from 'src/common/interfaces/objectFilter.interface';
 export class CourseController {
   constructor(private readonly courseService: CourseService) {}
 
+  // route for all
   @Get()
-  @Public()  
+  @Public()
   @ApiOperation({ summary: 'Get all courses (pagination, sort, search)' })
   @ApiQuery({ name: 'keySearch', type: String, required: false })
   @ApiQuery({ name: 'sortField', type: String, required: false })
@@ -34,7 +35,41 @@ export class CourseController {
     return this.courseService.getAllCourses(filter);
   }
 
-  @Post()
+  @Get('/teacher/:teacherId')
+  @Public()
+  @ApiOperation({
+    summary: 'Get all courses by teacher id (pagination, sort, search)',
+  })
+  @ApiParam({ name: 'teacherId', type: String, required: true })
+  @ApiQuery({ name: 'keySearch', type: String, required: false })
+  @ApiQuery({ name: 'sortField', type: String, required: false })
+  @ApiQuery({ name: 'sortOrder', type: String, required: false })
+  @ApiQuery({ name: 'page', type: Number, required: false })
+  @ApiQuery({ name: 'limit', type: Number, required: false })
+  async getAllCoursesByTeacherId(
+    @Param('teacherId') teacherId: string,
+    @Query() filter: fullObjectFilter,
+  ) {
+    return this.courseService.getCoursesByTeacherId(teacherId, filter);
+  }
+
+  // route for signed in user
+
+  // route for teacher
+  @Get('/teacher-area/my-courses')
+  @ApiBearerAuth()
+  @ApiQuery({ name: 'keySearch', type: String, required: false })
+  @ApiQuery({ name: 'sortField', type: String, required: false })
+  @ApiQuery({ name: 'sortOrder', type: String, required: false })
+  @ApiQuery({ name: 'page', type: Number, required: false })
+  @ApiQuery({ name: 'limit', type: Number, required: false })
+  @ClientRoles(UserRole.teacher)
+  async getMyCourses(@CurrentUser() user: currentClientUser, @Query() filter: fullObjectFilter) {
+    return this.courseService.getMyCourses(user.id, filter);
+  }
+
+
+  @Post('/teacher-area')
   @ApiBearerAuth()
   @ClientRoles(UserRole.teacher)
   async createCourse(
@@ -43,4 +78,5 @@ export class CourseController {
   ) {
     return this.courseService.createCourse(createCourseDto, user);
   }
+
 }

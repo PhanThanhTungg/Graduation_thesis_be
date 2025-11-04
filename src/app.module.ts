@@ -8,6 +8,8 @@ import { TestModule } from './test/test.module';
 import { LoggingModule } from './shared/logging/logging.module';
 import { CourseModule } from './modules/course/client/course-client.module';
 import { CategoryModule } from './modules/category/category.module';
+import { AdminCategoryModule } from './modules/category/admin/admin-category.module';
+import { ClientCategoryModule } from './modules/category/client/client-category.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { CategoryModule } from './modules/category/category.module';
     TestModule,
     CourseModule,
     CategoryModule,
+    AdminCategoryModule,
+    ClientCategoryModule,
   ],
   providers: [
   ],
