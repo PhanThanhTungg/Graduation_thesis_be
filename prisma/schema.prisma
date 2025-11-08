@@ -25,6 +25,7 @@ enum AdminAction {
 
 enum Status {
   active
+  warning
   inactive
 }
 
