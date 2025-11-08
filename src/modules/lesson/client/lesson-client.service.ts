@@ -51,7 +51,6 @@ export class LessonService {
             lessonId: createdLesson.id,
             videoId: dto.videoId,
             embedUrl: dto.embedUrl,
-            duration: dto.duration,
           },
         });
       }

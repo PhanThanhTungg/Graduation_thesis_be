@@ -22,6 +22,7 @@ export class CreateLessonDto {
   @IsString()
   videoId?: string;
 
+
   @ApiPropertyOptional({ description: 'Embed URL (for video type)' })
   @IsOptional()
   @IsString()
