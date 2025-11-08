@@ -10,6 +10,7 @@ import { CourseModule } from './modules/course/client/course-client.module';
 import { CategoryModule } from './modules/category/category.module';
 import { AdminCategoryModule } from './modules/category/admin/admin-category.module';
 import { ClientCategoryModule } from './modules/category/client/client-category.module';
+import { LessonClientModule } from './modules/lesson/client/lesson-client.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ClientCategoryModule } from './modules/category/client/client-category.
     CategoryModule,
     AdminCategoryModule,
     ClientCategoryModule,
+    LessonClientModule,
   ],
   providers: [
   ],
