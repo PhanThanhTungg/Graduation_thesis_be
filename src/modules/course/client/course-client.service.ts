@@ -140,6 +140,52 @@ export class CourseService {
     return {courses, total, page, limit};
   }
 
+  async getCourseBySlug(slug: string) {
+    const course = await this.prisma.course.findFirst({
+      where: {
+        slug,
+        deletedAt: null,
+        isPublished: true,
+      },
+      include: {
+        teacher: {
+          select: { id: true, fullName: true, email: true, avatarUrl: true, role: true, emailVerified: true, status: true, country: true },
+        },
+        courseDescription: true,
+        category: { select: { id: true, title: true, slug: true } },
+      },
+    });
+
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+
+    const courseDescription = course.courseDescription
+      ? {
+          headline: course.courseDescription.headline,
+          targetKnowledges: course.courseDescription.targetKnowledges
+            ? course.courseDescription.targetKnowledges.split('&&&')
+            : [],
+          requirement: course.courseDescription.requirement
+            ? course.courseDescription.requirement.split('&&&')
+            : [],
+          suitableParticipant: course.courseDescription.suitableParticipant
+            ? course.courseDescription.suitableParticipant.split('&&&')
+            : [],
+          detail: course.courseDescription.detail,
+        }
+      : null;
+
+    const response: successResponse = {
+      message: 'Get course by slug successfully',
+      data: {
+        ...course,
+        courseDescription: courseDescription,
+      },
+    };
+    return response;
+  }
+
   async getCourseById(id: string, teacherId: string) {
     const course = await this.prisma.course.findFirst({
       where: {

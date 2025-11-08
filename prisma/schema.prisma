@@ -199,7 +199,8 @@ model Lesson {
   title       String     @db.VarChar(255)
   description String?
   position    Int        @default(0)
-  
+  isFree      Boolean    @default(false) @map("is_free")
+
   chapter     Chapter    @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   videoLesson VideoLesson?
   files       File[]

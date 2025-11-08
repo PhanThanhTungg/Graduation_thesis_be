@@ -41,6 +41,7 @@ export class LessonService {
           slug: generateUniqueSlug(dto.title),
           description: dto.description,
           position: nextPosition,
+          isFree: dto.isFree ?? false,
         },
       });
 
@@ -168,6 +169,10 @@ export class LessonService {
 
       if (dto.description !== undefined) {
         updateData.description = dto.description;
+      }
+
+      if (dto.isFree !== undefined) {
+        updateData.isFree = dto.isFree;
       }
 
       const updated = await tx.lesson.update({

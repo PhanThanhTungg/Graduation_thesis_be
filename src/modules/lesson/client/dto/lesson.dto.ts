@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsOptional, IsString, MaxLength, ValidateNested, IsArray } from 'class-validator';
+import { IsNumber, IsOptional, IsString, MaxLength, ValidateNested, IsArray, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class FileDto {
@@ -48,6 +48,11 @@ export class CreateLessonDto {
   @ValidateNested({ each: true })
   @Type(() => FileDto)
   files?: FileDto[];
+
+  @ApiPropertyOptional({ description: 'Allow preview for non-enrolled students', default: false })
+  @IsOptional()
+  @IsBoolean()
+  isFree?: boolean;
 }
 
 export class UpdateLessonDto {
@@ -75,6 +80,11 @@ export class UpdateLessonDto {
   @ApiPropertyOptional({ description: 'Duration in seconds' })
   @IsOptional()
   duration?: number;
+
+  @ApiPropertyOptional({ description: 'Allow preview for non-enrolled students', default: false })
+  @IsOptional()
+  @IsBoolean()
+  isFree?: boolean;
 }
 
 export class LessonDto {
