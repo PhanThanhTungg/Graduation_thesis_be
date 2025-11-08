@@ -1,8 +1,9 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { CreateLessonDto, LessonDto } from './dto/lesson.dto';
+import { CreateLessonDto, LessonDto, UpdateLessonDto } from './dto/lesson.dto';
 import { generateUniqueSlug } from 'src/common/utils/slug.util';
 import { successResponse } from 'src/common/interfaces/response.interface';
+import { fullObjectFilter } from 'src/common/interfaces/objectFilter.interface';
 
 @Injectable()
 export class LessonService {
@@ -63,7 +64,7 @@ export class LessonService {
     return response;
   }
 
-  async getLessonsByChapterId(chapterId: string, teacherId: string) {
+  async getLessonsByChapterId(chapterId: string, teacherId: string, filter: fullObjectFilter & { type?: string } = {}) {
     const chapter = await this.prisma.chapter.findFirst({
       where: { id: chapterId, deletedAt: null },
       include: {
@@ -81,19 +82,157 @@ export class LessonService {
       throw new ForbiddenException('You do not have permission to view lessons in this chapter');
     }
 
-    const lessons = await this.prisma.lesson.findMany({
-      where: { chapterId: chapter.id, deletedAt: null },
-      orderBy: { position: 'asc' },
-      include: {
-        videoLesson: true,
-        theoryFile: true,
-        exerciseFile: true,
-      },
-    });
+    const { keySearch, type, sortField = 'position', sortOrder = 'asc' } = filter;
+    const page = Number(filter.page) || 1;
+    const limit = Number(filter.limit) || 10;
+
+    const where = {
+      chapterId: chapter.id,
+      deletedAt: null,
+      ...(keySearch && {
+        title: { contains: keySearch, mode: 'insensitive' as const },
+      }),
+      ...(type && { type: type as any }),
+    };
+
+    const [total, lessons] = await this.prisma.$transaction([
+      this.prisma.lesson.count({ where }),
+      this.prisma.lesson.findMany({
+        where,
+        include: {
+          videoLesson: true,
+          theoryFile: true,
+          exerciseFile: true,
+        },
+        ...(sortField && sortOrder && { orderBy: { [sortField]: sortOrder } }),
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+    ]);
 
     const response: successResponse = {
       message: 'Get lessons successfully',
-      data: { items: lessons },
+      data: {
+        items: lessons,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+    };
+    return response;
+  }
+
+  async updateLesson(lessonId: string, dto: UpdateLessonDto, teacherId: string) {
+    const lesson = await this.prisma.lesson.findFirst({
+      where: { id: lessonId, deletedAt: null },
+      include: {
+        chapter: {
+          include: {
+            course: {
+              select: { id: true, teacherId: true },
+            },
+          },
+        },
+        videoLesson: true,
+      },
+    });
+
+    if (!lesson) {
+      throw new NotFoundException('Lesson not found');
+    }
+
+    if (lesson.chapter.course.teacherId !== teacherId) {
+      throw new ForbiddenException('You do not have permission to update this lesson');
+    }
+
+    const updatedLesson = await this.prisma.$transaction(async (tx) => {
+      const updateData: any = {};
+
+      if (dto.title !== undefined) {
+        updateData.title = dto.title;
+        updateData.slug = generateUniqueSlug(dto.title);
+      }
+
+      if (dto.description !== undefined) {
+        updateData.description = dto.description;
+      }
+
+      if (dto.type !== undefined) {
+        updateData.type = dto.type;
+      }
+
+      const updated = await tx.lesson.update({
+        where: { id: lessonId },
+        data: updateData,
+        include: {
+          videoLesson: true,
+          theoryFile: true,
+          exerciseFile: true,
+        },
+      });
+
+      if (dto.type === 'video' && dto.videoUrl !== undefined) {
+        if (lesson.videoLesson) {
+          await tx.videoLesson.update({
+            where: { lessonId: lessonId },
+            data: { videoUrl: dto.videoUrl },
+          });
+        } else if (dto.videoUrl) {
+          await tx.videoLesson.create({
+            data: {
+              lessonId: lessonId,
+              videoUrl: dto.videoUrl,
+            },
+          });
+        }
+      } else if (dto.type !== 'video' && lesson.videoLesson) {
+        await tx.videoLesson.delete({
+          where: { lessonId: lessonId },
+        });
+      }
+
+      return updated;
+    });
+
+    const response: successResponse = {
+      message: 'Update lesson successfully',
+      data: updatedLesson,
+    };
+    return response;
+  }
+
+  async deleteLesson(lessonId: string, teacherId: string) {
+    const lesson = await this.prisma.lesson.findFirst({
+      where: { id: lessonId, deletedAt: null },
+      include: {
+        chapter: {
+          include: {
+            course: {
+              select: { id: true, teacherId: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!lesson) {
+      throw new NotFoundException('Lesson not found');
+    }
+
+    if (lesson.chapter.course.teacherId !== teacherId) {
+      throw new ForbiddenException('You do not have permission to delete this lesson');
+    }
+
+    await this.prisma.lesson.update({
+      where: { id: lessonId },
+      data: { deletedAt: new Date() },
+    });
+
+    const response: successResponse = {
+      message: 'Delete lesson successfully',
     };
     return response;
   }

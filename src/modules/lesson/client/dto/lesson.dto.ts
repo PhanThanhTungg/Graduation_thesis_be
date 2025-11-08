@@ -23,6 +23,29 @@ export class CreateLessonDto {
   videoUrl?: string;
 }
 
+export class UpdateLessonDto {
+  @ApiPropertyOptional({ description: 'Lesson title' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  title?: string;
+
+  @ApiPropertyOptional({ description: 'Lesson description' })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({ description: 'Lesson type', enum: LessonType })
+  @IsOptional()
+  @IsEnum(LessonType)
+  type?: LessonType;
+
+  @ApiPropertyOptional({ description: 'Video URL (for video type)' })
+  @IsOptional()
+  @IsString()
+  videoUrl?: string;
+}
+
 export class LessonDto {
   @ApiProperty()
   id: string;
