@@ -40,18 +40,29 @@ export class LessonService {
           title: dto.title,
           slug: generateUniqueSlug(dto.title),
           description: dto.description,
-          type: dto.type,
           position: nextPosition,
         },
       });
 
-      if (dto.type === 'video' && dto.videoId && dto.embedUrl) {
+      if (dto.videoId && dto.embedUrl) {
         await tx.videoLesson.create({
           data: {
             lessonId: createdLesson.id,
             videoId: dto.videoId,
             embedUrl: dto.embedUrl,
+            duration: dto.duration,
           },
+        });
+      }
+
+      if (dto.files && dto.files.length > 0) {
+        await tx.file.createMany({
+          data: dto.files.map((file) => ({
+            lessonId: createdLesson.id,
+            fileUrl: file.fileUrl,
+            fileName: file.fileName,
+            fileSize: file.fileSize,
+          })),
         });
       }
 
@@ -65,7 +76,7 @@ export class LessonService {
     return response;
   }
 
-  async getLessonsByChapterId(chapterId: string, teacherId: string, filter: fullObjectFilter & { type?: string } = {}) {
+  async getLessonsByChapterId(chapterId: string, teacherId: string, filter: fullObjectFilter = {}) {
     const chapter = await this.prisma.chapter.findFirst({
       where: { id: chapterId, deletedAt: null },
       include: {
@@ -83,7 +94,7 @@ export class LessonService {
       throw new ForbiddenException('You do not have permission to view lessons in this chapter');
     }
 
-    const { keySearch, type, sortField = 'position', sortOrder = 'asc' } = filter;
+    const { keySearch, sortField = 'position', sortOrder = 'asc' } = filter;
     const page = Number(filter.page) || 1;
     const limit = Number(filter.limit) || 10;
 
@@ -93,7 +104,6 @@ export class LessonService {
       ...(keySearch && {
         title: { contains: keySearch, mode: 'insensitive' as const },
       }),
-      ...(type && { type: type as any }),
     };
 
     const [total, lessons] = await this.prisma.$transaction([
@@ -102,8 +112,7 @@ export class LessonService {
         where,
         include: {
           videoLesson: true,
-          theoryFile: true,
-          exerciseFile: true,
+          files: true,
         },
         ...(sortField && sortOrder && { orderBy: { [sortField]: sortOrder } }),
         skip: (page - 1) * limit,
@@ -161,23 +170,16 @@ export class LessonService {
         updateData.description = dto.description;
       }
 
-      if (dto.type !== undefined) {
-        updateData.type = dto.type;
-      }
-
       const updated = await tx.lesson.update({
         where: { id: lessonId },
         data: updateData,
         include: {
           videoLesson: true,
-          theoryFile: true,
-          exerciseFile: true,
+          files: true,
         },
       });
 
-      const finalLessonType = dto.type !== undefined ? dto.type : lesson.type;
-
-      if (finalLessonType === 'video' && (dto.videoId !== undefined || dto.embedUrl !== undefined)) {
+      if (dto.videoId !== undefined || dto.embedUrl !== undefined) {
         if (lesson.videoLesson) {
           const updateVideoData: any = {};
           if (dto.videoId !== undefined) {
@@ -203,18 +205,13 @@ export class LessonService {
             },
           });
         }
-      } else if (finalLessonType !== 'video' && lesson.videoLesson) {
-        await tx.videoLesson.delete({
-          where: { lessonId: lessonId },
-        });
       }
 
       const finalUpdated = await tx.lesson.findUnique({
         where: { id: lessonId },
         include: {
           videoLesson: true,
-          theoryFile: true,
-          exerciseFile: true,
+          files: true,
         },
       });
 
@@ -273,8 +270,7 @@ export class LessonService {
           },
         },
         videoLesson: true,
-        theoryFile: true,
-        exerciseFile: true,
+        files: true,
       },
     });
 

@@ -1,6 +1,20 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
-import { LessonType } from '@prisma/client';
+import { IsNumber, IsOptional, IsString, MaxLength, ValidateNested, IsArray } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class FileDto {
+  @ApiProperty({ description: 'File URL' })
+  @IsString()
+  fileUrl: string;
+
+  @ApiProperty({ description: 'File name' })
+  @IsString()
+  fileName: string;
+
+  @ApiProperty({ description: 'File size in bytes' })
+  @IsNumber()
+  fileSize: number;
+}
 
 export class CreateLessonDto {
   @ApiProperty({ description: 'Lesson title' })
@@ -13,20 +27,27 @@ export class CreateLessonDto {
   @IsString()
   description?: string;
 
-  @ApiProperty({ description: 'Lesson type', enum: LessonType })
-  @IsEnum(LessonType)
-  type: LessonType;
-
-  @ApiPropertyOptional({ description: 'Video ID (for video type)' })
+  @ApiPropertyOptional({ description: 'Video ID' })
   @IsOptional()
   @IsString()
   videoId?: string;
 
-
-  @ApiPropertyOptional({ description: 'Embed URL (for video type)' })
+  @ApiPropertyOptional({ description: 'Embed URL' })
   @IsOptional()
   @IsString()
   embedUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Duration in seconds' })
+  @IsOptional()
+  @IsNumber()
+  duration?: number;
+
+  @ApiPropertyOptional({ description: 'Files', type: [FileDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => FileDto)
+  files?: FileDto[];
 }
 
 export class UpdateLessonDto {
@@ -41,17 +62,12 @@ export class UpdateLessonDto {
   @IsString()
   description?: string;
 
-  @ApiPropertyOptional({ description: 'Lesson type', enum: LessonType })
-  @IsOptional()
-  @IsEnum(LessonType)
-  type?: LessonType;
-
-  @ApiPropertyOptional({ description: 'Video ID (for video type)' })
+  @ApiPropertyOptional({ description: 'Video ID' })
   @IsOptional()
   @IsString()
   videoId?: string;
 
-  @ApiPropertyOptional({ description: 'Embed URL (for video type)' })
+  @ApiPropertyOptional({ description: 'Embed URL' })
   @IsOptional()
   @IsString()
   embedUrl?: string;
@@ -70,9 +86,6 @@ export class LessonDto {
 
   @ApiPropertyOptional()
   description?: string | null;
-
-  @ApiProperty({ enum: LessonType })
-  type: LessonType;
 
   @ApiProperty()
   position: number;
