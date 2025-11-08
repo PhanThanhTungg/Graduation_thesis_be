@@ -27,7 +27,7 @@ export class AdminCategoryService {
 
     const response: successResponse = {
       message: 'Get categories successfully',
-      data: categories
+      data: { categories : this.categoryService.getCategoryTree(categories) } 
     };
     return response;
   }
