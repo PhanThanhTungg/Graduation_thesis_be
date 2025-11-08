@@ -10,6 +10,7 @@ import { CourseModule } from './modules/course/client/course-client.module';
 import { CategoryModule } from './modules/category/category.module';
 import { AdminCategoryModule } from './modules/category/admin/admin-category.module';
 import { ClientCategoryModule } from './modules/category/client/client-category.module';
+import { LessonClientModule } from './modules/lesson/client/lesson-client.module';
 import { AdminCourseModule } from './modules/course/admin/admin-course.module';
 import { AdminUserModule } from './modules/user/admin/admin-user.module';
 
@@ -27,6 +28,7 @@ import { AdminUserModule } from './modules/user/admin/admin-user.module';
     CategoryModule,
     AdminCategoryModule,
     ClientCategoryModule,
+    LessonClientModule,
     AdminUserModule,
   ],
   providers: [

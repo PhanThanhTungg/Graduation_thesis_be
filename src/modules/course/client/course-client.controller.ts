@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { CourseService } from './course-client.service';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { UniversalAuthGuard } from 'src/common/guards/universal-auth.guard';
@@ -9,7 +9,8 @@ import {
 } from 'src/common/guards/client-role.guard';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
-import { CreateCourseDto } from './dto/course.dto';
+import { CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
+import { CreateChapterDto } from './dto/chapter.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Query } from '@nestjs/common';
 import { ApiQuery } from '@nestjs/swagger';
@@ -77,6 +78,54 @@ export class CourseController {
     @CurrentUser() user: currentClientUser,
   ) {
     return this.courseService.createCourse(createCourseDto, user);
+  }
+
+  @Get('/teacher-area/:id')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.teacher)
+  @ApiOperation({ summary: 'Get course by id (teacher area)' })
+  @ApiParam({ name: 'id', type: String, required: true })
+  async getCourseById(
+    @Param('id') id: string,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.courseService.getCourseById(id, user.id);
+  }
+
+  @Patch('/teacher-area/:id')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.teacher)
+  @ApiOperation({ summary: 'Update course by id (teacher area)' })
+  @ApiParam({ name: 'id', type: String, required: true })
+  async updateCourse(
+    @Param('id') id: string,
+    @Body() updateCourseDto: UpdateCourseDto,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.courseService.updateCourse(id, updateCourseDto, user.id);
+  }
+
+  @Get('/teacher-area/:id/chapters')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.teacher)
+  @ApiOperation({ summary: 'Get chapter tree by course id (teacher area)' })
+  async getChapterTree(
+    @Param('id') id: string,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.courseService.getChapterTree(id, user.id);
+  }
+
+  @Post('/teacher-area/:id/chapters')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.teacher)
+  @ApiOperation({ summary: 'Create chapter under course id (teacher area)' })
+  async createChapter(
+    @Param('id') id: string,
+    @Body() createChapterDto: CreateChapterDto,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.courseService.createChapter(id, createChapterDto, user.id);
   }
 
 }

@@ -29,6 +29,12 @@ enum Status {
   inactive
 }
 
+enum LessonType {
+  video
+  theory
+  exercise
+}
+
 model Admin {
   id           String    @id @default(uuid())
   fullName     String    @map("full_name") @db.VarChar(100)
@@ -151,6 +157,7 @@ model Course {
   teacher             User              @relation("TeacherCourses", fields: [teacherId], references: [id])
   category            Category          @relation(fields: [categoryId], references: [id])
   courseDescription   CourseDescription @relation(fields: [courseDescriptionId], references: [id])
+  chapters            Chapter[]
 
   createdAt           DateTime          @default(now()) @map("created_at")
   updatedAt           DateTime?         @updatedAt @map("updated_at")
@@ -169,6 +176,93 @@ model CourseDescription {
   course               Course?
 
   @@map("course_description")
+}
+
+model Chapter {
+  id          String    @id @default(uuid())
+  courseId    String    @map("course_id")
+  title       String    @db.VarChar(255)
+  description String?
+  position    Int       @default(0)
+  parentId    String?   @map("parent_id")
+  
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  parent      Chapter?  @relation("ChapterHierarchy", fields: [parentId], references: [id])
+  children    Chapter[] @relation("ChapterHierarchy")
+  lessons     Lesson[]
+  slug        String    @unique
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime? @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@map("chapter")
+}
+
+model Lesson {
+  id          String     @id @default(uuid())
+  chapterId   String     @map("chapter_id")
+  title       String     @db.VarChar(255)
+  description String?
+  type        LessonType
+  position    Int        @default(0)
+  
+  chapter     Chapter    @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  videoLesson VideoLesson?
+  theoryFile  TheoryFile?
+  exerciseFile ExerciseFile?
+  slug        String    @unique
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime?  @updatedAt @map("updated_at")
+  deletedAt   DateTime?  @map("deleted_at")
+
+  @@map("lesson")
+}
+
+model VideoLesson {
+  id        String  @id @default(uuid())
+  lessonId  String  @unique @map("lesson_id")
+  videoId   String  @map("video_id")
+  embedUrl  String  @map("embed_url")
+
+  duration  Int?     
+  lesson    Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("video_lesson")
+}
+
+model TheoryFile {
+  id        String  @id @default(uuid())
+  lessonId  String  @unique @map("lesson_id")
+  fileUrl   String  @map("file_url")
+  fileName  String  @map("file_name")
+  fileSize  Int     @map("file_size")
+  
+  lesson    Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("theory_file")
+}
+
+model ExerciseFile {
+  id        String  @id @default(uuid())
+  lessonId  String  @unique @map("lesson_id")
+  fileUrl   String  @map("file_url")
+  fileName  String  @map("file_name")
+  fileSize  Int     @map("file_size")
+  
+  lesson    Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("exercise_file")
 }
 
 model EmailVerificationToken {
