@@ -54,6 +54,10 @@ export class UpdateLessonDto {
   @IsOptional()
   @IsString()
   embedUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Duration in seconds' })
+  @IsOptional()
+  duration?: number;
 }
 
 export class LessonDto {

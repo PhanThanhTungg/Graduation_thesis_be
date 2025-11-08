@@ -51,6 +51,7 @@ export class LessonService {
             lessonId: createdLesson.id,
             videoId: dto.videoId,
             embedUrl: dto.embedUrl,
+            duration: dto.duration,
           },
         });
       }
@@ -186,6 +187,9 @@ export class LessonService {
           if (dto.embedUrl !== undefined) {
             updateVideoData.embedUrl = dto.embedUrl;
           }
+          if (dto.duration !== undefined) {
+            updateVideoData.duration = dto.duration;
+          }
           await tx.videoLesson.update({
             where: { lessonId: lessonId },
             data: updateVideoData,
@@ -196,6 +200,7 @@ export class LessonService {
               lessonId: lessonId,
               videoId: dto.videoId,
               embedUrl: dto.embedUrl,
+              duration: dto.duration,
             },
           });
         }
