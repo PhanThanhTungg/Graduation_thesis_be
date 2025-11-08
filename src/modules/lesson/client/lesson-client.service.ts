@@ -236,5 +236,37 @@ export class LessonService {
     };
     return response;
   }
+
+  async getLessonBySlug(lessonSlug: string, teacherId: string) {
+    const lesson = await this.prisma.lesson.findFirst({
+      where: { slug: lessonSlug, deletedAt: null },
+      include: {
+        chapter: {
+          include: {
+            course: {
+              select: { id: true, teacherId: true },
+            },
+          },
+        },
+        videoLesson: true,
+        theoryFile: true,
+        exerciseFile: true,
+      },
+    });
+
+    if (!lesson) {
+      throw new NotFoundException('Lesson not found');
+    }
+
+    if (lesson.chapter.course.teacherId !== teacherId) {
+      throw new ForbiddenException('You do not have permission to view this lesson');
+    }
+
+    const response: successResponse = {
+      message: 'Get lesson successfully',
+      data: lesson,
+    };
+    return response;
+  }
 }
 

@@ -51,6 +51,18 @@ export class LessonController {
     return this.lessonService.getLessonsByChapterId(chapterId, user.id, filter);
   }
 
+  @Get('/teacher-area/:lessonSlug')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.teacher)
+  @ApiOperation({ summary: 'Get lesson by slug (teacher area)' })
+  @ApiParam({ name: 'lessonSlug', type: String, required: true })
+  async getLessonBySlug(
+    @Param('lessonSlug') lessonSlug: string,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.lessonService.getLessonBySlug(lessonSlug, user.id);
+  }
+
   @Patch('/teacher-area/:lessonId')
   @ApiBearerAuth()
   @ClientRoles(UserRole.teacher)
