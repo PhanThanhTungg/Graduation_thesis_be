@@ -105,3 +105,61 @@ export class CreateCourseDto {
   })
   courseDescription: CourseDescriptionDto;
 }
+
+export class UpdateCourseDto {
+  @IsString()
+  @IsOptional()
+  @ApiProperty({
+    description: 'The title of the course',
+    example: 'C++ advanced by tung',
+    required: false,
+  })
+  title?: string;
+
+  @IsUrl()
+  @IsOptional()
+  @ApiProperty({
+    description: 'The thumbnail URL of the course',
+    example: 'https://example.com/thumbnail.jpg',
+    required: false,
+  })
+  thumbnailUrl?: string;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  @ApiProperty({
+    description: 'The price of the course',
+    example: 99.99,
+    required: false,
+  })
+  price?: number;
+
+  @IsString()
+  @IsOptional()
+  @ApiProperty({
+    description: 'The category ID of the course',
+    example: 'uuid-string',
+    required: false,
+  })
+  categoryId?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  @ApiProperty({
+    description: 'The is published of the course',
+    example: false,
+    required: false,
+  })
+  isPublished?: boolean;
+
+  @ValidateNested()
+  @Type(() => CourseDescriptionDto)
+  @IsOptional()
+  @ApiProperty({
+    description: 'The course description',
+    type: CourseDescriptionDto,
+    required: false,
+  })
+  courseDescription?: CourseDescriptionDto;
+}
