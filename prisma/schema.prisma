@@ -205,7 +205,6 @@ model Lesson {
   description String?
   type        LessonType
   position    Int        @default(0)
-  duration    Int?
   
   chapter     Chapter    @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   videoLesson VideoLesson?
@@ -222,12 +221,15 @@ model Lesson {
 model VideoLesson {
   id        String  @id @default(uuid())
   lessonId  String  @unique @map("lesson_id")
-  videoUrl  String  @map("video_url")
-  
+  videoId   String  @map("video_id")
+  embedUrl  String  @map("embed_url")
+
+  duration  Int?     
   lesson    Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("video_lesson")
 }

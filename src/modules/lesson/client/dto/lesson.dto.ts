@@ -17,10 +17,15 @@ export class CreateLessonDto {
   @IsEnum(LessonType)
   type: LessonType;
 
-  @ApiPropertyOptional({ description: 'Video URL (for video type)' })
+  @ApiPropertyOptional({ description: 'Video ID (for video type)' })
   @IsOptional()
   @IsString()
-  videoUrl?: string;
+  videoId?: string;
+
+  @ApiPropertyOptional({ description: 'Embed URL (for video type)' })
+  @IsOptional()
+  @IsString()
+  embedUrl?: string;
 }
 
 export class UpdateLessonDto {
@@ -40,10 +45,15 @@ export class UpdateLessonDto {
   @IsEnum(LessonType)
   type?: LessonType;
 
-  @ApiPropertyOptional({ description: 'Video URL (for video type)' })
+  @ApiPropertyOptional({ description: 'Video ID (for video type)' })
   @IsOptional()
   @IsString()
-  videoUrl?: string;
+  videoId?: string;
+
+  @ApiPropertyOptional({ description: 'Embed URL (for video type)' })
+  @IsOptional()
+  @IsString()
+  embedUrl?: string;
 }
 
 export class LessonDto {

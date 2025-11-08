@@ -45,11 +45,12 @@ export class LessonService {
         },
       });
 
-      if (dto.type === 'video' && dto.videoUrl) {
+      if (dto.type === 'video' && dto.videoId && dto.embedUrl) {
         await tx.videoLesson.create({
           data: {
             lessonId: createdLesson.id,
-            videoUrl: dto.videoUrl,
+            videoId: dto.videoId,
+            embedUrl: dto.embedUrl,
           },
         });
       }
@@ -174,27 +175,46 @@ export class LessonService {
         },
       });
 
-      if (dto.type === 'video' && dto.videoUrl !== undefined) {
+      const finalLessonType = dto.type !== undefined ? dto.type : lesson.type;
+
+      if (finalLessonType === 'video' && (dto.videoId !== undefined || dto.embedUrl !== undefined)) {
         if (lesson.videoLesson) {
+          const updateVideoData: any = {};
+          if (dto.videoId !== undefined) {
+            updateVideoData.videoId = dto.videoId;
+          }
+          if (dto.embedUrl !== undefined) {
+            updateVideoData.embedUrl = dto.embedUrl;
+          }
           await tx.videoLesson.update({
             where: { lessonId: lessonId },
-            data: { videoUrl: dto.videoUrl },
+            data: updateVideoData,
           });
-        } else if (dto.videoUrl) {
+        } else if (dto.videoId && dto.embedUrl) {
           await tx.videoLesson.create({
             data: {
               lessonId: lessonId,
-              videoUrl: dto.videoUrl,
+              videoId: dto.videoId,
+              embedUrl: dto.embedUrl,
             },
           });
         }
-      } else if (dto.type !== 'video' && lesson.videoLesson) {
+      } else if (finalLessonType !== 'video' && lesson.videoLesson) {
         await tx.videoLesson.delete({
           where: { lessonId: lessonId },
         });
       }
 
-      return updated;
+      const finalUpdated = await tx.lesson.findUnique({
+        where: { id: lessonId },
+        include: {
+          videoLesson: true,
+          theoryFile: true,
+          exerciseFile: true,
+        },
+      });
+
+      return finalUpdated || updated;
     });
 
     const response: successResponse = {
