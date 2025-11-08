@@ -29,12 +29,6 @@ enum Status {
   inactive
 }
 
-enum LessonType {
-  video
-  theory
-  exercise
-}
-
 model Admin {
   id           String    @id @default(uuid())
   fullName     String    @map("full_name") @db.VarChar(100)
@@ -204,13 +198,12 @@ model Lesson {
   chapterId   String     @map("chapter_id")
   title       String     @db.VarChar(255)
   description String?
-  type        LessonType
   position    Int        @default(0)
-  
+  isFree      Boolean    @default(false) @map("is_free")
+
   chapter     Chapter    @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   videoLesson VideoLesson?
-  theoryFile  TheoryFile?
-  exerciseFile ExerciseFile?
+  files       File[]
   slug        String    @unique
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime?  @updatedAt @map("updated_at")
@@ -235,9 +228,9 @@ model VideoLesson {
   @@map("video_lesson")
 }
 
-model TheoryFile {
+model File {
   id        String  @id @default(uuid())
-  lessonId  String  @unique @map("lesson_id")
+  lessonId  String  @map("lesson_id")
   fileUrl   String  @map("file_url")
   fileName  String  @map("file_name")
   fileSize  Int     @map("file_size")
@@ -247,22 +240,7 @@ model TheoryFile {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  @@map("theory_file")
-}
-
-model ExerciseFile {
-  id        String  @id @default(uuid())
-  lessonId  String  @unique @map("lesson_id")
-  fileUrl   String  @map("file_url")
-  fileName  String  @map("file_name")
-  fileSize  Int     @map("file_size")
-  
-  lesson    Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime? @updatedAt @map("updated_at")
-
-  @@map("exercise_file")
+  @@map("file")
 }
 
 model EmailVerificationToken {

@@ -36,6 +36,14 @@ export class CourseController {
     return this.courseService.getAllCourses(filter);
   }
 
+  @Get('/:slug')
+  @Public()
+  @ApiOperation({ summary: 'Get course by slug' })
+  @ApiParam({ name: 'slug', type: String, required: true })
+  async getCourseBySlug(@Param('slug') slug: string) {
+    return this.courseService.getCourseBySlug(slug);
+  }
+
   @Get('/teacher/:teacherId')
   @Public()
   @ApiOperation({
