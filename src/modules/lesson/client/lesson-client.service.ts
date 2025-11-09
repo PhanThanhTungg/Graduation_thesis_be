@@ -210,6 +210,23 @@ export class LessonService {
         }
       }
 
+      if (dto.files !== undefined) {
+        await tx.file.deleteMany({
+          where: { lessonId: lessonId },
+        });
+
+        if (dto.files.length > 0) {
+          await tx.file.createMany({
+            data: dto.files.map((file) => ({
+              lessonId: lessonId,
+              fileUrl: file.fileUrl,
+              fileName: file.fileName,
+              fileSize: file.fileSize,
+            })),
+          });
+        }
+      }
+
       const finalUpdated = await tx.lesson.findUnique({
         where: { id: lessonId },
         include: {
