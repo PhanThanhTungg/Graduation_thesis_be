@@ -31,6 +31,11 @@ export class ClientRegisterDto {
   @IsString()
   @ApiProperty({ description: 'The country of the client is got from API'})
   country: string
+
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ description: 'Google reCAPTCHA v3 token', required: true })
+  recaptchaToken: string
 }
 
 
@@ -39,4 +44,24 @@ export class VerifyEmailDto {
   @IsNotEmpty()
   @ApiProperty({ description: 'The verification token' })
   token: string
+}
+
+export class ForgotPasswordDto {
+  @IsEmail()
+  @ApiProperty({ description: 'The email of the user', example: 'user@example.com' })
+  email: string
+}
+
+export class ResetPasswordDto {
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ description: 'The password reset token' })
+  token: string
+
+  @IsString()
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, {
+    message: 'password must contain at least 1 lowercase letter, 1 uppercase letter, 1 number and 1 special character'
+  })
+  @ApiProperty({ description: 'The new password. Contains at least 1 lowercase letter, 1 uppercase letter, 1 number and 1 special character' })
+  newPassword: string
 }

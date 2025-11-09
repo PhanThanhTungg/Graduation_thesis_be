@@ -5,6 +5,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt'
 import { EnvService } from 'src/shared/env/env.service'
 import { JwtPayload } from 'src/shared/jwt/jwt.service'
 import { PrismaService } from 'src/shared/prisma/prisma.service'
+import { isUserInactive } from '../utils/user-status.util'
 
 export interface currentClientUser {
   id: string,
@@ -47,7 +48,7 @@ export class ClientJwtStrategy extends PassportStrategy(Strategy, 'client-jwt') 
       throw new UnauthorizedException('User not found')
     }
 
-    if (user.status !== 'active') {
+    if (isUserInactive(user.status)) {
       throw new UnauthorizedException('User account is inactive')
     }
 

@@ -19,7 +19,7 @@ export class LoggingInterceptor implements NestInterceptor {
     response.setHeader('x-request-id', requestId);
 
     // Extract user ID
-    const userId = request['user']?.id || request.headers['x-user-id'] as string;
+    const userId = (request['user'] as any)?.id || request.headers['x-user-id'] as string;
 
     return next.handle().pipe(
       tap((data) => {
