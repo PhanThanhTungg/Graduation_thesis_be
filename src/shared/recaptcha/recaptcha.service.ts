@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { LoggingService } from 'src/shared/logging/logging.service';
+import { EnvService } from '../env/env.service';
 
 interface RecaptchaResponse {
   success: boolean;
@@ -20,8 +21,10 @@ export class RecaptchaService {
   constructor(
     private readonly configService: ConfigService,
     private readonly loggingService: LoggingService,
+    private readonly envService: EnvService
+    ,
   ) {
-    this.secretKey = this.configService.get<string>('RECAPTCHA_SECRET_KEY') || '';
+    this.secretKey = this.envService.get('RECAPTCHA_SECRET_KEY');
     if (!this.secretKey) {
       throw new Error('RECAPTCHA_SECRET_KEY is not configured');
     }

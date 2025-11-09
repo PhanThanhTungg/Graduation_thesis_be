@@ -65,4 +65,7 @@ export class EnvSchema {
   @IsOptional()
   @IsString()
   APP_NAME?: string = 'Aikabis'
+
+  @IsString()
+  RECAPTCHA_SECRET_KEY: string
 }
