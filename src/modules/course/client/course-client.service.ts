@@ -210,6 +210,52 @@ export class CourseService {
     return response;
   }
 
+  async getCourseBySlugTeacherArea(slug: string, teacherId: string) {
+    const course = await this.prisma.course.findFirst({
+      where: {
+        slug,
+        deletedAt: null,
+        teacherId,
+      },
+      include: {
+        teacher: {
+          select: { id: true, fullName: true },
+        },
+        courseDescription: true,
+        category: { select: { id: true, title: true, slug: true } },
+      },
+    });
+
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+
+    const courseDescription = course.courseDescription
+      ? {
+          headline: course.courseDescription.headline,
+          targetKnowledges: course.courseDescription.targetKnowledges
+            ? course.courseDescription.targetKnowledges.split('&&&')
+            : [],
+          requirement: course.courseDescription.requirement
+            ? course.courseDescription.requirement.split('&&&')
+            : [],
+          suitableParticipant: course.courseDescription.suitableParticipant
+            ? course.courseDescription.suitableParticipant.split('&&&')
+            : [],
+          detail: course.courseDescription.detail,
+        }
+      : null;
+
+    const response: successResponse = {
+      message: 'Get course successfully',
+      data: {
+        ...course,
+        courseDescription: courseDescription,
+      },
+    };
+    return response;
+  }
+
   async getCourseById(id: string, teacherId: string) {
     const course = await this.prisma.course.findFirst({
       where: {
@@ -325,7 +371,6 @@ export class CourseService {
       const courseData: any = {
         ...(updateCourseDto.title !== undefined && {
           title: updateCourseDto.title,
-          slug: generateUniqueSlug(updateCourseDto.title),
         }),
         ...(updateCourseDto.thumbnailUrl !== undefined && {
           thumbnailUrl: updateCourseDto.thumbnailUrl,
@@ -372,6 +417,89 @@ export class CourseService {
     const response: successResponse = {
       message: 'Update course successfully',
       data: updatedCourse,
+    };
+    return response;
+  }
+
+  async getChapterTreeBySlug(slug: string, teacherId: string) {
+    const course = await this.prisma.course.findFirst({
+      where: { slug, deletedAt: null, teacherId },
+      select: { id: true },
+    });
+    if (!course) throw new NotFoundException('Course not found');
+
+    const chapters = await this.prisma.chapter.findMany({
+      where: { courseId: course.id },
+      orderBy: [{ parentId: 'asc' }, { position: 'asc' }],
+      select: { id: true, title: true, slug: true, description: true, position: true, parentId: true },
+    });
+
+    const idToNode: Record<string, ChapterTreeItemDto> = {};
+    chapters.forEach((ch) => {
+      idToNode[ch.id] = {
+        id: ch.id,
+        title: ch.title,
+        slug: ch.slug,
+        description: ch.description,
+        position: ch.position,
+        parentId: ch.parentId,
+        children: [],
+      };
+    });
+
+    const roots: ChapterTreeItemDto[] = [];
+    chapters.forEach((ch) => {
+      const node = idToNode[ch.id];
+      if (ch.parentId && idToNode[ch.parentId]) {
+        idToNode[ch.parentId].children.push(node);
+      } else {
+        roots.push(node);
+      }
+    });
+
+    const response: successResponse = {
+      message: 'Get chapter tree successfully',
+      data: { items: roots },
+    };
+    return response;
+  }
+
+  async createChapterBySlug(slug: string, dto: CreateChapterDto, teacherId: string) {
+    const course = await this.prisma.course.findFirst({
+      where: { slug, deletedAt: null, teacherId },
+      select: { id: true },
+    });
+    if (!course) throw new NotFoundException('Course not found');
+
+    if (dto.parentId) {
+      const parent = await this.prisma.chapter.findFirst({
+        where: { id: dto.parentId, courseId: course.id },
+        select: { id: true },
+      });
+      if (!parent) throw new BadRequestException('Parent chapter not found');
+    }
+
+    const maxPos = await this.prisma.chapter.aggregate({
+      where: { courseId: course.id, parentId: dto.parentId ?? null },
+      _max: { position: true },
+    });
+    const nextPosition = (maxPos._max?.position ?? 0) + 1;
+
+    const created = await this.prisma.chapter.create({
+      data: {
+        courseId: course.id,
+        title: dto.title,
+        slug: generateUniqueSlug(dto.title),
+        description: dto.description,
+        parentId: dto.parentId ?? null,
+        position: nextPosition,
+      },
+      select: { id: true, title: true, slug: true, description: true, position: true, parentId: true },
+    });
+
+    const response: successResponse = {
+      message: 'Create chapter successfully',
+      data: created,
     };
     return response;
   }
@@ -455,6 +583,69 @@ export class CourseService {
     const response: successResponse = {
       message: 'Create chapter successfully',
       data: created,
+    };
+    return response;
+  }
+
+  async deleteChapterBySlug(slug: string, chapterId: string, teacherId: string) {
+    const course = await this.prisma.course.findFirst({
+      where: { slug, deletedAt: null, teacherId },
+      select: { id: true },
+    });
+    if (!course) throw new NotFoundException('Course not found');
+
+    const chapter = await this.prisma.chapter.findFirst({
+      where: { id: chapterId, courseId: course.id },
+      include: {
+        course: {
+          select: { teacherId: true },
+        },
+      },
+    });
+
+    if (!chapter) {
+      throw new NotFoundException('Chapter not found');
+    }
+
+    if (chapter.course.teacherId !== teacherId) {
+      throw new ForbiddenException('You do not have permission to delete this chapter');
+    }
+
+    await this.prisma.chapter.delete({
+      where: { id: chapterId },
+    });
+
+    const response: successResponse = {
+      message: 'Delete chapter successfully',
+    };
+    return response;
+  }
+
+  async deleteChapter(courseId: string, chapterId: string, teacherId: string) {
+    const course = await this.prisma.course.findFirst({
+      where: { id: courseId, deletedAt: null, teacherId },
+      select: { id: true, teacherId: true },
+    });
+    if (!course) throw new NotFoundException('Course not found');
+
+    const chapter = await this.prisma.chapter.findFirst({
+      where: { id: chapterId, courseId: course.id },
+    });
+
+    if (!chapter) {
+      throw new NotFoundException('Chapter not found');
+    }
+
+    if (course.teacherId !== teacherId) {
+      throw new ForbiddenException('You do not have permission to delete this chapter');
+    }
+
+    await this.prisma.chapter.delete({
+      where: { id: chapterId },
+    });
+
+    const response: successResponse = {
+      message: 'Delete chapter successfully',
     };
     return response;
   }

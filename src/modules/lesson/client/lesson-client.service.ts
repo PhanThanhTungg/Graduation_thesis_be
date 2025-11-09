@@ -163,7 +163,6 @@ export class LessonService {
 
       if (dto.title !== undefined) {
         updateData.title = dto.title;
-        updateData.slug = generateUniqueSlug(dto.title);
       }
 
       if (dto.description !== undefined) {

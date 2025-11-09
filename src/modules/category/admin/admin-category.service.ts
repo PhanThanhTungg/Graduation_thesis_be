@@ -69,7 +69,6 @@ export class AdminCategoryService {
       where: { id , deletedAt: null },
       data: {
         ...updateCategoryData,
-        ...(updateCategoryData.title && { slug: generateUniqueSlug(updateCategoryData.title) }),
       }
     });
 
