@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { CourseService } from './course-client.service';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { UniversalAuthGuard } from 'src/common/guards/universal-auth.guard';
@@ -10,7 +10,7 @@ import {
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 import { CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
-import { CreateChapterDto } from './dto/chapter.dto';
+import { CreateChapterDto, UpdateChapterDto } from './dto/chapter.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Query } from '@nestjs/common';
 import { ApiQuery } from '@nestjs/swagger';
@@ -72,6 +72,7 @@ export class CourseController {
   @ApiQuery({ name: 'sortOrder', type: String, required: false })
   @ApiQuery({ name: 'page', type: Number, required: false })
   @ApiQuery({ name: 'limit', type: Number, required: false })
+  @ApiQuery({ name: 'isPublished', type: String, required: false, description: 'Filter by published status: "true" for published, "false" for unpublished' })
   @ClientRoles(UserRole.teacher)
   async getMyCourses(@CurrentUser() user: currentClientUser, @Query() filter: fullObjectFilter) {
     return this.courseService.getMyCourses(user.id, filter);
@@ -86,6 +87,18 @@ export class CourseController {
     @CurrentUser() user: currentClientUser,
   ) {
     return this.courseService.createCourse(createCourseDto, user);
+  }
+
+  @Get('/teacher-area/slug/:slug')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.teacher)
+  @ApiOperation({ summary: 'Get course by slug (teacher area)' })
+  @ApiParam({ name: 'slug', type: String, required: true })
+  async getCourseBySlugTeacherArea(
+    @Param('slug') slug: string,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.courseService.getCourseBySlugTeacherArea(slug, user.id);
   }
 
   @Get('/teacher-area/:id')
@@ -113,6 +126,31 @@ export class CourseController {
     return this.courseService.updateCourse(id, updateCourseDto, user.id);
   }
 
+  @Get('/teacher-area/slug/:slug/chapters')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.teacher)
+  @ApiOperation({ summary: 'Get chapter tree by course slug (teacher area)' })
+  @ApiParam({ name: 'slug', type: String, required: true })
+  async getChapterTreeBySlug(
+    @Param('slug') slug: string,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.courseService.getChapterTreeBySlug(slug, user.id);
+  }
+
+  @Post('/teacher-area/slug/:slug/chapters')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.teacher)
+  @ApiOperation({ summary: 'Create chapter under course slug (teacher area)' })
+  @ApiParam({ name: 'slug', type: String, required: true })
+  async createChapterBySlug(
+    @Param('slug') slug: string,
+    @Body() createChapterDto: CreateChapterDto,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.courseService.createChapterBySlug(slug, createChapterDto, user.id);
+  }
+
   @Get('/teacher-area/:id/chapters')
   @ApiBearerAuth()
   @ClientRoles(UserRole.teacher)
@@ -134,6 +172,61 @@ export class CourseController {
     @CurrentUser() user: currentClientUser,
   ) {
     return this.courseService.createChapter(id, createChapterDto, user.id);
+  }
+
+  @Patch('/teacher-area/:id/chapters/:chapterId')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.teacher)
+  @ApiOperation({ summary: 'Update chapter by course id and chapter id (teacher area)' })
+  @ApiParam({ name: 'id', type: String, required: true })
+  @ApiParam({ name: 'chapterId', type: String, required: true })
+  async updateChapter(
+    @Param('id') id: string,
+    @Param('chapterId') chapterId: string,
+    @Body() updateChapterDto: UpdateChapterDto,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.courseService.updateChapter(id, chapterId, updateChapterDto, user.id);
+  }
+
+  @Delete('/teacher-area/slug/:slug/chapters/:chapterId')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.teacher)
+  @ApiOperation({ summary: 'Delete chapter by slug and chapter id (teacher area)' })
+  @ApiParam({ name: 'slug', type: String, required: true })
+  @ApiParam({ name: 'chapterId', type: String, required: true })
+  async deleteChapterBySlug(
+    @Param('slug') slug: string,
+    @Param('chapterId') chapterId: string,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.courseService.deleteChapterBySlug(slug, chapterId, user.id);
+  }
+
+  @Delete('/teacher-area/:id/chapters/:chapterId')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.teacher)
+  @ApiOperation({ summary: 'Delete chapter by course id and chapter id (teacher area)' })
+  @ApiParam({ name: 'id', type: String, required: true })
+  @ApiParam({ name: 'chapterId', type: String, required: true })
+  async deleteChapter(
+    @Param('id') id: string,
+    @Param('chapterId') chapterId: string,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.courseService.deleteChapter(id, chapterId, user.id);
+  }
+
+  @Delete('/teacher-area/:id')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.teacher)
+  @ApiOperation({ summary: 'Delete course by id (teacher area)' })
+  @ApiParam({ name: 'id', type: String, required: true })
+  async deleteCourse(
+    @Param('id') id: string,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.courseService.deleteCourse(id, user.id);
   }
 
 }

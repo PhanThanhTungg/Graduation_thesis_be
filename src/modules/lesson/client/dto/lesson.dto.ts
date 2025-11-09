@@ -81,6 +81,13 @@ export class UpdateLessonDto {
   @IsOptional()
   duration?: number;
 
+  @ApiPropertyOptional({ description: 'Files', type: [FileDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => FileDto)
+  files?: FileDto[];
+
   @ApiPropertyOptional({ description: 'Allow preview for non-enrolled students', default: false })
   @IsOptional()
   @IsBoolean()

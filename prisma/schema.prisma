@@ -35,7 +35,7 @@ model Admin {
   email        String    @unique @db.VarChar(100)
   passwordHash String    @map("password_hash")
   adminRoleId  String    @map("admin_role_id")
-  adminRole    AdminRole @relation(fields: [adminRoleId], references: [id])
+  adminRole    AdminRole @relation(fields: [adminRoleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -59,8 +59,8 @@ model AdminRole {
 model AdminRolePermission {
   adminRoleId       String          @map("id_admin_role")
   adminPermissionId String          @map("id_admin_permission")
-  adminRole         AdminRole       @relation(fields: [adminRoleId], references: [id])
-  adminPermission   AdminPermission @relation(fields: [adminPermissionId], references: [id])
+  adminRole         AdminRole       @relation(fields: [adminRoleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  adminPermission   AdminPermission @relation(fields: [adminPermissionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@id([adminRoleId, adminPermissionId])
   @@map("admin_role_permission")
@@ -90,7 +90,6 @@ model User {
   status        Status          @default(active)
   country       String          @db.VarChar(50)
   
-  // Relations
   teacherSetting           TeacherSetting?
   courses                  Course[]                @relation("TeacherCourses")
   emailVerificationTokens  EmailVerificationToken[]
@@ -112,7 +111,7 @@ model TeacherSetting {
   facebook String?
   linkedin String?
   youtube  String?
-  user     User    @relation(fields: [userId], references: [id])
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -125,7 +124,7 @@ model Category {
   title    String?
   slug     String?
   parentId String?    @map("parent_id")
-  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   children Category[] @relation("CategoryHierarchy")
   courses  Course[]
 
@@ -149,10 +148,9 @@ model Course {
   isPublished         Boolean           @default(false) @map("is_published")
   rating              Float             @default(0) @map("rating")
   
-  // Relations
-  teacher             User              @relation("TeacherCourses", fields: [teacherId], references: [id])
-  category            Category          @relation(fields: [categoryId], references: [id])
-  courseDescription   CourseDescription @relation(fields: [courseDescriptionId], references: [id])
+  teacher             User              @relation("TeacherCourses", fields: [teacherId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  category            Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseDescription   CourseDescription @relation(fields: [courseDescriptionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   chapters            Chapter[]
 
   createdAt           DateTime          @default(now()) @map("created_at")
@@ -165,10 +163,10 @@ model Course {
 model CourseDescription {
   id                   String   @id @default(uuid())
   headline             String?
-  targetKnowledges     String?  @map("target_knowledges") // split by comma,
+  targetKnowledges     String?  @map("target_knowledges")
   requirement          String?
   detail               String?
-  suitableParticipant  String?  @map("suitable_participant") // split by comma,
+  suitableParticipant  String?  @map("suitable_participant")
   course               Course?
 
   @@map("course_description")
@@ -182,15 +180,14 @@ model Chapter {
   position    Int       @default(0)
   parentId    String?   @map("parent_id")
   
-  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  parent      Chapter?  @relation("ChapterHierarchy", fields: [parentId], references: [id])
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  parent      Chapter?  @relation("ChapterHierarchy", fields: [parentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   children    Chapter[] @relation("ChapterHierarchy")
   lessons     Lesson[]
   slug        String    @unique
 
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime? @updatedAt @map("updated_at")
-  deletedAt   DateTime? @map("deleted_at")
 
   @@map("chapter")
 }
@@ -204,13 +201,12 @@ model Lesson {
   isFree      Boolean    @default(false) @map("is_free")
   viewCount   Int        @default(0) @map("view_count")
 
-  chapter     Chapter    @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  chapter     Chapter    @relation(fields: [chapterId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   videoLesson VideoLesson?
   files       File[]
   slug        String    @unique
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime?  @updatedAt @map("updated_at")
-  deletedAt   DateTime?  @map("deleted_at")
 
   @@map("lesson")
 }
@@ -222,11 +218,10 @@ model VideoLesson {
   embedUrl  String  @map("embed_url")
 
   duration  Int?     
-  lesson    Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lesson    Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
 
   @@map("video_lesson")
 }
@@ -238,11 +233,10 @@ model File {
   fileName  String  @map("file_name")
   fileSize  Int     @map("file_size")
   
-  lesson    Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lesson    Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
 
   @@map("file")
 }
@@ -253,7 +247,7 @@ model EmailVerificationToken {
   token     String   @unique
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("email_verification_tokens")
 }

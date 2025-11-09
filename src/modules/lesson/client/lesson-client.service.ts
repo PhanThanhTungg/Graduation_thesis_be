@@ -11,7 +11,7 @@ export class LessonService {
 
   async createLesson(chapterId: string, dto: CreateLessonDto, teacherId: string) {
     const chapter = await this.prisma.chapter.findFirst({
-      where: { id: chapterId, deletedAt: null },
+      where: { id: chapterId },
       include: {
         course: {
           select: { id: true, teacherId: true },
@@ -28,10 +28,10 @@ export class LessonService {
     }
 
     const maxPos = await this.prisma.lesson.aggregate({
-      where: { chapterId: chapter.id, deletedAt: null },
+      where: { chapterId: chapter.id },
       _max: { position: true },
     });
-    const nextPosition = (maxPos._max.position ?? 0) + 1;
+    const nextPosition = (maxPos._max?.position ?? 0) + 1;
 
     const lesson = await this.prisma.$transaction(async (tx) => {
       const createdLesson = await tx.lesson.create({
@@ -79,7 +79,7 @@ export class LessonService {
 
   async getLessonsByChapterId(chapterId: string, teacherId: string, filter: fullObjectFilter = {}) {
     const chapter = await this.prisma.chapter.findFirst({
-      where: { id: chapterId, deletedAt: null },
+      where: { id: chapterId },
       include: {
         course: {
           select: { id: true, teacherId: true },
@@ -101,7 +101,6 @@ export class LessonService {
 
     const where = {
       chapterId: chapter.id,
-      deletedAt: null,
       ...(keySearch && {
         title: { contains: keySearch, mode: 'insensitive' as const },
       }),
@@ -138,7 +137,7 @@ export class LessonService {
 
   async updateLesson(lessonId: string, dto: UpdateLessonDto, teacherId: string) {
     const lesson = await this.prisma.lesson.findFirst({
-      where: { id: lessonId, deletedAt: null },
+      where: { id: lessonId },
       include: {
         chapter: {
           include: {
@@ -164,7 +163,6 @@ export class LessonService {
 
       if (dto.title !== undefined) {
         updateData.title = dto.title;
-        updateData.slug = generateUniqueSlug(dto.title);
       }
 
       if (dto.description !== undefined) {
@@ -212,6 +210,23 @@ export class LessonService {
         }
       }
 
+      if (dto.files !== undefined) {
+        await tx.file.deleteMany({
+          where: { lessonId: lessonId },
+        });
+
+        if (dto.files.length > 0) {
+          await tx.file.createMany({
+            data: dto.files.map((file) => ({
+              lessonId: lessonId,
+              fileUrl: file.fileUrl,
+              fileName: file.fileName,
+              fileSize: file.fileSize,
+            })),
+          });
+        }
+      }
+
       const finalUpdated = await tx.lesson.findUnique({
         where: { id: lessonId },
         include: {
@@ -232,7 +247,7 @@ export class LessonService {
 
   async deleteLesson(lessonId: string, teacherId: string) {
     const lesson = await this.prisma.lesson.findFirst({
-      where: { id: lessonId, deletedAt: null },
+      where: { id: lessonId },
       include: {
         chapter: {
           include: {
@@ -252,9 +267,8 @@ export class LessonService {
       throw new ForbiddenException('You do not have permission to delete this lesson');
     }
 
-    await this.prisma.lesson.update({
+    await this.prisma.lesson.delete({
       where: { id: lessonId },
-      data: { deletedAt: new Date() },
     });
 
     const response: successResponse = {
@@ -265,7 +279,7 @@ export class LessonService {
 
   async getLessonBySlug(lessonSlug: string, teacherId: string) {
     const lesson = await this.prisma.lesson.findFirst({
-      where: { slug: lessonSlug, deletedAt: null },
+      where: { slug: lessonSlug },
       include: {
         chapter: {
           include: {

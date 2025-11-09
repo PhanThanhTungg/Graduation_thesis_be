@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { CourseDescriptionDto, CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
-import { ChapterTreeItemDto, CreateChapterDto } from './dto/chapter.dto';
+import { ChapterTreeItemDto, CreateChapterDto, UpdateChapterDto } from './dto/chapter.dto';
 import { generateUniqueSlug } from 'src/common/utils/slug.util';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 import { successResponse } from 'src/common/interfaces/response.interface';
@@ -56,6 +56,12 @@ export class CourseService {
       message: 'Get my courses successfully',
       data: {
         items: courses,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
       },
     };
     return response;
@@ -108,17 +114,35 @@ export class CourseService {
 
   private async getCourses(filter: fullObjectFilter, teacherId?: string, isMyCourses?: boolean){
     const {keySearch, sortField = 'createdAt',sortOrder = 'asc'} = filter;
+    const isPublished = (filter as any).isPublished;
     const page = Number(filter.page) || 1;
     const limit = Number(filter.limit) || 10;
 
-    const where = {
+    let isPublishedFilter: boolean | undefined = undefined;
+    if (isMyCourses && isPublished !== undefined && isPublished !== null && isPublished !== '') {
+      const isPublishedStr = String(isPublished).toLowerCase();
+      if (isPublishedStr === 'true' || isPublished === true) {
+        isPublishedFilter = true;
+      } else if (isPublishedStr === 'false' || isPublished === false) {
+        isPublishedFilter = false;
+      }
+    }
+
+    const where: any = {
       deletedAt: null,
-      isPublished: isMyCourses ? undefined : true,
       ...(teacherId && { teacherId }),
       ...(keySearch && {
         title: { contains: keySearch, mode: 'insensitive' as const },
       }),
     };
+
+    if (isMyCourses) {
+      if (isPublishedFilter !== undefined) {
+        where.isPublished = isPublishedFilter;
+      }
+    } else {
+      where.isPublished = true;
+    }
 
     const [total, courses] = await this.prisma.$transaction([
       this.prisma.course.count({ where }),
@@ -178,6 +202,52 @@ export class CourseService {
 
     const response: successResponse = {
       message: 'Get course by slug successfully',
+      data: {
+        ...course,
+        courseDescription: courseDescription,
+      },
+    };
+    return response;
+  }
+
+  async getCourseBySlugTeacherArea(slug: string, teacherId: string) {
+    const course = await this.prisma.course.findFirst({
+      where: {
+        slug,
+        deletedAt: null,
+        teacherId,
+      },
+      include: {
+        teacher: {
+          select: { id: true, fullName: true },
+        },
+        courseDescription: true,
+        category: { select: { id: true, title: true, slug: true } },
+      },
+    });
+
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+
+    const courseDescription = course.courseDescription
+      ? {
+          headline: course.courseDescription.headline,
+          targetKnowledges: course.courseDescription.targetKnowledges
+            ? course.courseDescription.targetKnowledges.split('&&&')
+            : [],
+          requirement: course.courseDescription.requirement
+            ? course.courseDescription.requirement.split('&&&')
+            : [],
+          suitableParticipant: course.courseDescription.suitableParticipant
+            ? course.courseDescription.suitableParticipant.split('&&&')
+            : [],
+          detail: course.courseDescription.detail,
+        }
+      : null;
+
+    const response: successResponse = {
+      message: 'Get course successfully',
       data: {
         ...course,
         courseDescription: courseDescription,
@@ -301,7 +371,6 @@ export class CourseService {
       const courseData: any = {
         ...(updateCourseDto.title !== undefined && {
           title: updateCourseDto.title,
-          slug: generateUniqueSlug(updateCourseDto.title),
         }),
         ...(updateCourseDto.thumbnailUrl !== undefined && {
           thumbnailUrl: updateCourseDto.thumbnailUrl,
@@ -352,6 +421,89 @@ export class CourseService {
     return response;
   }
 
+  async getChapterTreeBySlug(slug: string, teacherId: string) {
+    const course = await this.prisma.course.findFirst({
+      where: { slug, deletedAt: null, teacherId },
+      select: { id: true },
+    });
+    if (!course) throw new NotFoundException('Course not found');
+
+    const chapters = await this.prisma.chapter.findMany({
+      where: { courseId: course.id },
+      orderBy: [{ parentId: 'asc' }, { position: 'asc' }],
+      select: { id: true, title: true, slug: true, description: true, position: true, parentId: true },
+    });
+
+    const idToNode: Record<string, ChapterTreeItemDto> = {};
+    chapters.forEach((ch) => {
+      idToNode[ch.id] = {
+        id: ch.id,
+        title: ch.title,
+        slug: ch.slug,
+        description: ch.description,
+        position: ch.position,
+        parentId: ch.parentId,
+        children: [],
+      };
+    });
+
+    const roots: ChapterTreeItemDto[] = [];
+    chapters.forEach((ch) => {
+      const node = idToNode[ch.id];
+      if (ch.parentId && idToNode[ch.parentId]) {
+        idToNode[ch.parentId].children.push(node);
+      } else {
+        roots.push(node);
+      }
+    });
+
+    const response: successResponse = {
+      message: 'Get chapter tree successfully',
+      data: { items: roots },
+    };
+    return response;
+  }
+
+  async createChapterBySlug(slug: string, dto: CreateChapterDto, teacherId: string) {
+    const course = await this.prisma.course.findFirst({
+      where: { slug, deletedAt: null, teacherId },
+      select: { id: true },
+    });
+    if (!course) throw new NotFoundException('Course not found');
+
+    if (dto.parentId) {
+      const parent = await this.prisma.chapter.findFirst({
+        where: { id: dto.parentId, courseId: course.id },
+        select: { id: true },
+      });
+      if (!parent) throw new BadRequestException('Parent chapter not found');
+    }
+
+    const maxPos = await this.prisma.chapter.aggregate({
+      where: { courseId: course.id, parentId: dto.parentId ?? null },
+      _max: { position: true },
+    });
+    const nextPosition = (maxPos._max?.position ?? 0) + 1;
+
+    const created = await this.prisma.chapter.create({
+      data: {
+        courseId: course.id,
+        title: dto.title,
+        slug: generateUniqueSlug(dto.title),
+        description: dto.description,
+        parentId: dto.parentId ?? null,
+        position: nextPosition,
+      },
+      select: { id: true, title: true, slug: true, description: true, position: true, parentId: true },
+    });
+
+    const response: successResponse = {
+      message: 'Create chapter successfully',
+      data: created,
+    };
+    return response;
+  }
+
   async getChapterTree(id: string, teacherId: string) {
     const course = await this.prisma.course.findFirst({
       where: { id, deletedAt: null, teacherId },
@@ -360,7 +512,7 @@ export class CourseService {
     if (!course) throw new NotFoundException('Course not found');
 
     const chapters = await this.prisma.chapter.findMany({
-      where: { courseId: course.id, deletedAt: null },
+      where: { courseId: course.id },
       orderBy: [{ parentId: 'asc' }, { position: 'asc' }],
       select: { id: true, title: true, slug: true, description: true, position: true, parentId: true },
     });
@@ -404,17 +556,17 @@ export class CourseService {
 
     if (dto.parentId) {
       const parent = await this.prisma.chapter.findFirst({
-        where: { id: dto.parentId, courseId: course.id, deletedAt: null },
+        where: { id: dto.parentId, courseId: course.id },
         select: { id: true },
       });
       if (!parent) throw new BadRequestException('Parent chapter not found');
     }
 
     const maxPos = await this.prisma.chapter.aggregate({
-      where: { courseId: course.id, parentId: dto.parentId ?? null, deletedAt: null },
+      where: { courseId: course.id, parentId: dto.parentId ?? null },
       _max: { position: true },
     });
-    const nextPosition = (maxPos._max.position ?? 0) + 1;
+    const nextPosition = (maxPos._max?.position ?? 0) + 1;
 
     const created = await this.prisma.chapter.create({
       data: {
@@ -431,6 +583,137 @@ export class CourseService {
     const response: successResponse = {
       message: 'Create chapter successfully',
       data: created,
+    };
+    return response;
+  }
+
+  async updateChapter(courseId: string, chapterId: string, dto: UpdateChapterDto, teacherId: string) {
+    const course = await this.prisma.course.findFirst({
+      where: { id: courseId, deletedAt: null, teacherId },
+      select: { id: true, teacherId: true },
+    });
+    if (!course) throw new NotFoundException('Course not found');
+
+    const chapter = await this.prisma.chapter.findFirst({
+      where: { id: chapterId, courseId: course.id },
+    });
+
+    if (!chapter) {
+      throw new NotFoundException('Chapter not found');
+    }
+
+    if (course.teacherId !== teacherId) {
+      throw new ForbiddenException('You do not have permission to update this chapter');
+    }
+
+    const updateData: any = {};
+    if (dto.title !== undefined) {
+      updateData.title = dto.title;
+      updateData.slug = generateUniqueSlug(dto.title);
+    }
+    if (dto.description !== undefined) {
+      updateData.description = dto.description;
+    }
+
+    const updated = await this.prisma.chapter.update({
+      where: { id: chapterId },
+      data: updateData,
+      select: { id: true, title: true, slug: true, description: true, position: true, parentId: true },
+    });
+
+    const response: successResponse = {
+      message: 'Update chapter successfully',
+      data: updated,
+    };
+    return response;
+  }
+
+  async deleteChapterBySlug(slug: string, chapterId: string, teacherId: string) {
+    const course = await this.prisma.course.findFirst({
+      where: { slug, deletedAt: null, teacherId },
+      select: { id: true },
+    });
+    if (!course) throw new NotFoundException('Course not found');
+
+    const chapter = await this.prisma.chapter.findFirst({
+      where: { id: chapterId, courseId: course.id },
+      include: {
+        course: {
+          select: { teacherId: true },
+        },
+      },
+    });
+
+    if (!chapter) {
+      throw new NotFoundException('Chapter not found');
+    }
+
+    if (chapter.course.teacherId !== teacherId) {
+      throw new ForbiddenException('You do not have permission to delete this chapter');
+    }
+
+    await this.prisma.chapter.delete({
+      where: { id: chapterId },
+    });
+
+    const response: successResponse = {
+      message: 'Delete chapter successfully',
+    };
+    return response;
+  }
+
+  async deleteChapter(courseId: string, chapterId: string, teacherId: string) {
+    const course = await this.prisma.course.findFirst({
+      where: { id: courseId, deletedAt: null, teacherId },
+      select: { id: true, teacherId: true },
+    });
+    if (!course) throw new NotFoundException('Course not found');
+
+    const chapter = await this.prisma.chapter.findFirst({
+      where: { id: chapterId, courseId: course.id },
+    });
+
+    if (!chapter) {
+      throw new NotFoundException('Chapter not found');
+    }
+
+    if (course.teacherId !== teacherId) {
+      throw new ForbiddenException('You do not have permission to delete this chapter');
+    }
+
+    await this.prisma.chapter.delete({
+      where: { id: chapterId },
+    });
+
+    const response: successResponse = {
+      message: 'Delete chapter successfully',
+    };
+    return response;
+  }
+
+  async deleteCourse(id: string, teacherId: string) {
+    const course = await this.prisma.course.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+        teacherId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+
+    await this.prisma.course.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+
+    const response: successResponse = {
+      message: 'Delete course successfully',
     };
     return response;
   }
