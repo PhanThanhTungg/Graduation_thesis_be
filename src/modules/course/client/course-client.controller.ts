@@ -10,7 +10,7 @@ import {
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 import { CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
-import { CreateChapterDto } from './dto/chapter.dto';
+import { CreateChapterDto, UpdateChapterDto } from './dto/chapter.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Query } from '@nestjs/common';
 import { ApiQuery } from '@nestjs/swagger';
@@ -172,6 +172,21 @@ export class CourseController {
     @CurrentUser() user: currentClientUser,
   ) {
     return this.courseService.createChapter(id, createChapterDto, user.id);
+  }
+
+  @Patch('/teacher-area/:id/chapters/:chapterId')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.teacher)
+  @ApiOperation({ summary: 'Update chapter by course id and chapter id (teacher area)' })
+  @ApiParam({ name: 'id', type: String, required: true })
+  @ApiParam({ name: 'chapterId', type: String, required: true })
+  async updateChapter(
+    @Param('id') id: string,
+    @Param('chapterId') chapterId: string,
+    @Body() updateChapterDto: UpdateChapterDto,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.courseService.updateChapter(id, chapterId, updateChapterDto, user.id);
   }
 
   @Delete('/teacher-area/slug/:slug/chapters/:chapterId')

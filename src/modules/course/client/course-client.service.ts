@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { CourseDescriptionDto, CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
-import { ChapterTreeItemDto, CreateChapterDto } from './dto/chapter.dto';
+import { ChapterTreeItemDto, CreateChapterDto, UpdateChapterDto } from './dto/chapter.dto';
 import { generateUniqueSlug } from 'src/common/utils/slug.util';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 import { successResponse } from 'src/common/interfaces/response.interface';
@@ -583,6 +583,47 @@ export class CourseService {
     const response: successResponse = {
       message: 'Create chapter successfully',
       data: created,
+    };
+    return response;
+  }
+
+  async updateChapter(courseId: string, chapterId: string, dto: UpdateChapterDto, teacherId: string) {
+    const course = await this.prisma.course.findFirst({
+      where: { id: courseId, deletedAt: null, teacherId },
+      select: { id: true, teacherId: true },
+    });
+    if (!course) throw new NotFoundException('Course not found');
+
+    const chapter = await this.prisma.chapter.findFirst({
+      where: { id: chapterId, courseId: course.id },
+    });
+
+    if (!chapter) {
+      throw new NotFoundException('Chapter not found');
+    }
+
+    if (course.teacherId !== teacherId) {
+      throw new ForbiddenException('You do not have permission to update this chapter');
+    }
+
+    const updateData: any = {};
+    if (dto.title !== undefined) {
+      updateData.title = dto.title;
+      updateData.slug = generateUniqueSlug(dto.title);
+    }
+    if (dto.description !== undefined) {
+      updateData.description = dto.description;
+    }
+
+    const updated = await this.prisma.chapter.update({
+      where: { id: chapterId },
+      data: updateData,
+      select: { id: true, title: true, slug: true, description: true, position: true, parentId: true },
+    });
+
+    const response: successResponse = {
+      message: 'Update chapter successfully',
+      data: updated,
     };
     return response;
   }
