@@ -56,6 +56,12 @@ export class CourseService {
       message: 'Get my courses successfully',
       data: {
         items: courses,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
       },
     };
     return response;
@@ -108,17 +114,35 @@ export class CourseService {
 
   private async getCourses(filter: fullObjectFilter, teacherId?: string, isMyCourses?: boolean){
     const {keySearch, sortField = 'createdAt',sortOrder = 'asc'} = filter;
+    const isPublished = (filter as any).isPublished;
     const page = Number(filter.page) || 1;
     const limit = Number(filter.limit) || 10;
 
-    const where = {
+    let isPublishedFilter: boolean | undefined = undefined;
+    if (isMyCourses && isPublished !== undefined && isPublished !== null && isPublished !== '') {
+      const isPublishedStr = String(isPublished).toLowerCase();
+      if (isPublishedStr === 'true' || isPublished === true) {
+        isPublishedFilter = true;
+      } else if (isPublishedStr === 'false' || isPublished === false) {
+        isPublishedFilter = false;
+      }
+    }
+
+    const where: any = {
       deletedAt: null,
-      isPublished: isMyCourses ? undefined : true,
       ...(teacherId && { teacherId }),
       ...(keySearch && {
         title: { contains: keySearch, mode: 'insensitive' as const },
       }),
     };
+
+    if (isMyCourses) {
+      if (isPublishedFilter !== undefined) {
+        where.isPublished = isPublishedFilter;
+      }
+    } else {
+      where.isPublished = true;
+    }
 
     const [total, courses] = await this.prisma.$transaction([
       this.prisma.course.count({ where }),

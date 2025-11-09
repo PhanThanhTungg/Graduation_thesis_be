@@ -72,6 +72,7 @@ export class CourseController {
   @ApiQuery({ name: 'sortOrder', type: String, required: false })
   @ApiQuery({ name: 'page', type: Number, required: false })
   @ApiQuery({ name: 'limit', type: Number, required: false })
+  @ApiQuery({ name: 'isPublished', type: String, required: false, description: 'Filter by published status: "true" for published, "false" for unpublished' })
   @ClientRoles(UserRole.teacher)
   async getMyCourses(@CurrentUser() user: currentClientUser, @Query() filter: fullObjectFilter) {
     return this.courseService.getMyCourses(user.id, filter);

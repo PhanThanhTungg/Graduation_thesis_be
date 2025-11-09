@@ -12,5 +12,7 @@ export interface sortFilter {
   sortOrder?: 'asc' | 'desc';
 }
 
-export interface fullObjectFilter extends objectSearchFilter, paginationFilter, sortFilter {}
+export interface fullObjectFilter extends objectSearchFilter, paginationFilter, sortFilter {
+  isPublished?: string | boolean;
+}
 export interface categoryFilter extends objectSearchFilter, sortFilter {}
