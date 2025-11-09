@@ -189,7 +189,6 @@ model Chapter {
 
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime? @updatedAt @map("updated_at")
-  deletedAt   DateTime? @map("deleted_at")
 
   @@map("chapter")
 }
@@ -209,7 +208,6 @@ model Lesson {
   slug        String    @unique
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime?  @updatedAt @map("updated_at")
-  deletedAt   DateTime?  @map("deleted_at")
 
   @@map("lesson")
 }
@@ -225,7 +223,6 @@ model VideoLesson {
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
 
   @@map("video_lesson")
 }
@@ -241,7 +238,6 @@ model File {
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
 
   @@map("file")
 }

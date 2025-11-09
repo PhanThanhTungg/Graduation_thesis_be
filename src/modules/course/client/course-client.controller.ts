@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { CourseService } from './course-client.service';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { UniversalAuthGuard } from 'src/common/guards/universal-auth.guard';
@@ -134,6 +134,18 @@ export class CourseController {
     @CurrentUser() user: currentClientUser,
   ) {
     return this.courseService.createChapter(id, createChapterDto, user.id);
+  }
+
+  @Delete('/teacher-area/:id')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.teacher)
+  @ApiOperation({ summary: 'Delete course by id (teacher area)' })
+  @ApiParam({ name: 'id', type: String, required: true })
+  async deleteCourse(
+    @Param('id') id: string,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.courseService.deleteCourse(id, user.id);
   }
 
 }

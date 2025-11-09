@@ -360,7 +360,7 @@ export class CourseService {
     if (!course) throw new NotFoundException('Course not found');
 
     const chapters = await this.prisma.chapter.findMany({
-      where: { courseId: course.id, deletedAt: null },
+      where: { courseId: course.id },
       orderBy: [{ parentId: 'asc' }, { position: 'asc' }],
       select: { id: true, title: true, slug: true, description: true, position: true, parentId: true },
     });
@@ -404,17 +404,17 @@ export class CourseService {
 
     if (dto.parentId) {
       const parent = await this.prisma.chapter.findFirst({
-        where: { id: dto.parentId, courseId: course.id, deletedAt: null },
+        where: { id: dto.parentId, courseId: course.id },
         select: { id: true },
       });
       if (!parent) throw new BadRequestException('Parent chapter not found');
     }
 
     const maxPos = await this.prisma.chapter.aggregate({
-      where: { courseId: course.id, parentId: dto.parentId ?? null, deletedAt: null },
+      where: { courseId: course.id, parentId: dto.parentId ?? null },
       _max: { position: true },
     });
-    const nextPosition = (maxPos._max.position ?? 0) + 1;
+    const nextPosition = (maxPos._max?.position ?? 0) + 1;
 
     const created = await this.prisma.chapter.create({
       data: {
@@ -431,6 +431,33 @@ export class CourseService {
     const response: successResponse = {
       message: 'Create chapter successfully',
       data: created,
+    };
+    return response;
+  }
+
+  async deleteCourse(id: string, teacherId: string) {
+    const course = await this.prisma.course.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+        teacherId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+
+    await this.prisma.course.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+
+    const response: successResponse = {
+      message: 'Delete course successfully',
     };
     return response;
   }
