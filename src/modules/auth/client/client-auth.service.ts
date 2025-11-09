@@ -20,6 +20,8 @@ import { User } from '@prisma/client';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 import { EmailService } from 'src/shared/email/email.service';
 import { successResponse } from 'src/common/interfaces/response.interface';
+import { RecaptchaService } from 'src/shared/recaptcha/recaptcha.service';
+import { isUserInactive } from 'src/common/utils/user-status.util';
 
 @Injectable()
 export class ClientAuthService {
@@ -28,9 +30,16 @@ export class ClientAuthService {
     private readonly jwtAuthService: JwtAuthService,
     private readonly loggingService: LoggingService,
     private readonly emailService: EmailService,
+    private readonly recaptchaService: RecaptchaService,
   ) {}
 
   async register(registerDto: ClientRegisterDto) {
+    // Verify reCAPTCHA token first
+    await this.recaptchaService.verifyToken(
+      registerDto.recaptchaToken,
+      'register',
+    );
+
     const existingUser = await this.prisma.user.findUnique({
       where: { email: registerDto.email },
     });
@@ -120,7 +129,7 @@ export class ClientAuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    if (user.status !== 'active') {
+    if (isUserInactive(user.status)) {
       throw new UnauthorizedException('Account is inactive');
     }
 
@@ -213,6 +222,89 @@ export class ClientAuthService {
     return response;
   }
 
+  async forgotPassword(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Email not found');
+    }
+
+    if (isUserInactive(user.status)) {
+      throw new BadRequestException('Account is inactive');
+    }
+
+    await this.prisma.passwordResetToken.deleteMany({
+      where: { userId: user.id },
+    });
+
+    // Generate new token
+    const token = this.generateVerificationToken();
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1); // Token expires in 1 hour
+
+    await this.prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        token,
+        expiresAt,
+      },
+    });
+
+    // Send email
+    const isSent = await this.emailService.sendPasswordResetEmail(
+      user.email,
+      token,
+      user.fullName,
+    );
+    
+    if (!isSent) {
+      throw new BadRequestException('Failed to send password reset email');
+    }
+
+    const response: successResponse = {
+      message: 'Password reset email sent successfully',
+    };
+    return response;
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    const resetToken = await this.prisma.passwordResetToken.findUnique({
+      where: { token },
+      include: { user: true },
+    });
+
+    if (!resetToken) {
+      throw new NotFoundException('Invalid reset token');
+    }
+
+    if (resetToken.expiresAt < new Date()) {
+      await this.prisma.passwordResetToken.delete({
+        where: { id: resetToken.id },
+      });
+      throw new BadRequestException(
+        'Reset token has expired. Please request a new password reset',
+      );
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.user.update({
+      where: { id: resetToken.userId },
+      data: { passwordHash },
+    });
+
+    await this.prisma.passwordResetToken.delete({
+      where: { id: resetToken.id },
+    });
+
+    const response: successResponse = {
+      message: 'Password has been reset successfully',
+    };
+    return response;
+  }
+
   private generateVerificationToken(): string {
     return randomBytes(32).toString('hex');
   }
@@ -231,7 +323,7 @@ export class ClientAuthService {
       throw new UnauthorizedException('Password is incorrect');
     }
 
-    if (user.status !== 'active') {
+    if (isUserInactive(user.status)) {
       throw new UnauthorizedException('Account is inactive');
     }
 

@@ -3,6 +3,7 @@ import * as nodemailer from 'nodemailer';
 import { EnvService } from '../env/env.service';
 import { LoggingService } from '../logging/logging.service';
 import { getEmailVerificationTemplate } from './templates/email_verification.template';
+import { getPasswordResetTemplate } from './templates/password_reset.template';
 
 @Injectable()
 export class EmailService {
@@ -36,6 +37,25 @@ export class EmailService {
     try {
       await this.transporter.sendMail(mailOptions);
       this.loggingService.log(`Email verification sent to ${email}`);
+      return true;
+    } catch (error) {
+      throw new Error(`Email sending failed: ${error.message}`);
+    }
+  }
+
+  async sendPasswordResetEmail(email: string, token: string, fullName: string) {
+    const resetUrl = `${this.envService.get('FRONTEND_URL')}reset-password?token=${token}`;
+    
+    const mailOptions: nodemailer.SendMailOptions = {
+      from: `"${this.envService.get('APP_NAME')}" <${this.envService.get('EMAIL_USER')}>`,
+      to: email,
+      subject: 'Reset your password',
+      html: getPasswordResetTemplate(fullName, resetUrl),
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      this.loggingService.log(`Password reset email sent to ${email}`);
       return true;
     } catch (error) {
       throw new Error(`Email sending failed: ${error.message}`);

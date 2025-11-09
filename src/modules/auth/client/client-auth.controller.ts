@@ -1,7 +1,7 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Get, Req, Res, UnauthorizedException } from '@nestjs/common'
 import { Request, Response } from 'express'
 import { ClientAuthService } from './client-auth.service'
-import { ClientLoginDto, ClientRegisterDto, VerifyEmailDto } from './dto/client-auth.dto'
+import { ClientLoginDto, ClientRegisterDto, VerifyEmailDto, ForgotPasswordDto, ResetPasswordDto } from './dto/client-auth.dto'
 import { AuthGuard } from '@nestjs/passport'
 import { setCookieHttpOnly } from 'src/common/utils/cookie.util'
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger'
@@ -84,5 +84,22 @@ export class ClientAuthController {
   @ApiBody({ type: VerifyEmailDto })
   async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
     return await this.clientAuthService.verifyEmail(verifyEmailDto)
+  }
+
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Request password reset email' })
+  @ApiBody({ type: ForgotPasswordDto })
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return await this.clientAuthService.forgotPassword(forgotPasswordDto.email)
+  }
+
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Reset password with token' })
+  @ApiBody({ type: ResetPasswordDto })
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return await this.clientAuthService.resetPassword(
+      resetPasswordDto.token,
+      resetPasswordDto.newPassword
+    )
   }
 }
