@@ -14,5 +14,6 @@ export interface sortFilter {
 
 export interface fullObjectFilter extends objectSearchFilter, paginationFilter, sortFilter {
   isPublished?: string | boolean;
+  includeDeleted?: string | boolean;
 }
 export interface categoryFilter extends objectSearchFilter, sortFilter {}
