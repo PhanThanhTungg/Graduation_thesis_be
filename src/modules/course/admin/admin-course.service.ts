@@ -8,12 +8,15 @@ export class AdminCourseService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getAllCourses(filter: fullObjectFilter) {
-    const { keySearch, sortField = 'createdAt', sortOrder = 'desc' } = filter;
+    const { keySearch, sortField = 'createdAt', sortOrder = 'desc', includeDeleted } = filter;
     const page = Number(filter.page) || 1;
     const limit = Number(filter.limit) || 10;
 
+    // Convert includeDeleted to boolean
+    const shouldIncludeDeleted = includeDeleted === 'true' || includeDeleted === true;
+
     const where = {
-      deletedAt: null,
+      ...(!shouldIncludeDeleted && { deletedAt: null }),
       ...(keySearch && {
         title: { contains: keySearch, mode: 'insensitive' as const },
       }),
@@ -60,6 +63,7 @@ export class AdminCourseService {
         name: course.category.title,
       } : null,
       createdAt: course.createdAt,
+      deletedAt: course.deletedAt,
     }));
 
     const response: successResponse = {
@@ -73,6 +77,33 @@ export class AdminCourseService {
           totalPages: Math.ceil(total / limit),
         },
       },
+    };
+    return response;
+  }
+
+  async deleteCourse(id: string) {
+    // Check if course exists
+    const course = await this.prisma.course.findUnique({
+      where: { id },
+    });
+
+    if (!course) {
+      throw new Error('Course not found');
+    }
+
+    if (course.deletedAt) {
+      throw new Error('Course is already deleted');
+    }
+
+    // Soft delete by updating deletedAt
+    await this.prisma.course.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+
+    const response: successResponse = {
+      message: 'Course deleted successfully',
+      data: null,
     };
     return response;
   }
