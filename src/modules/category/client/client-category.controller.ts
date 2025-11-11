@@ -21,6 +21,13 @@ export class ClientCategoryController {
     return this.clientCategoryService.getAllCategories(filter);
   }
 
+  @Get('leaf')
+  @Public()
+  @ApiOperation({ summary: 'Get all leaf categories (categories without children)' })
+  async getLeafCategories() {
+    return this.clientCategoryService.getLeafCategories();
+  }
+
   @Get(':slug')
   @Public()
   @ApiOperation({ summary: 'Get a category by slug' })

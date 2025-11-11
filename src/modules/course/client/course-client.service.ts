@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { CourseDescriptionDto, CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
 import { ChapterTreeItemDto, CreateChapterDto, UpdateChapterDto } from './dto/chapter.dto';
+import { GetCoursesDto } from './dto/get-courses.dto';
 import { generateUniqueSlug } from 'src/common/utils/slug.util';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 import { successResponse } from 'src/common/interfaces/response.interface';
@@ -15,21 +16,149 @@ export class CourseService {
     private readonly prisma: PrismaService,
     private readonly categoryService: CategoryService,
   ) {}
-  
-  async getAllCourses(filter: fullObjectFilter) {
-    const {courses, total, page, limit} = await this.getCourses(filter);
+
+  async getAllCoursesWithFilters(dto: GetCoursesDto) {
+    const {
+      categoryIds,
+      ratings,
+      priceFrom,
+      priceTo,
+      search,
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'DESC'
+    } = dto;
+
+    // Build where clause
+    const where: any = {
+      deletedAt: null,
+      isPublished: true,
+    };
+
+    // Filter by categories
+    if (categoryIds) {
+      const categoryIdArray = categoryIds
+        .split(',')
+        .map(id => id.trim())
+        .filter(id => id !== '');
+      
+      if (categoryIdArray.length > 0) {
+        where.categoryId = { in: categoryIdArray };
+      }
+    }
+
+    // Filter by ratings (using the rating field in Course model)
+    if (ratings) {
+      const ratingArray = ratings
+        .split(',')
+        .map(r => parseFloat(r.trim()))
+        .filter(r => !isNaN(r) && r >= 1 && r <= 5);
+      
+      if (ratingArray.length > 0) {
+        // Build rating conditions for OR query
+        const ratingConditions = ratingArray.map(rating => {
+          if (rating === 5) {
+            return { rating: { gte: 5, lte: 5 } };
+          }
+          return { rating: { gte: rating, lt: rating + 1 } };
+        });
+
+        // If we already have OR conditions from search, merge them
+        if (where.OR) {
+          where.AND = [
+            { OR: where.OR },
+            { OR: ratingConditions }
+          ];
+          delete where.OR;
+        } else {
+          where.OR = ratingConditions;
+        }
+      }
+    }
+
+    // Filter by price range
+    if (priceFrom !== undefined && priceTo !== undefined) {
+      where.price = { gte: priceFrom, lte: priceTo };
+    } else if (priceFrom !== undefined) {
+      where.price = { gte: priceFrom };
+    } else if (priceTo !== undefined) {
+      where.price = { lte: priceTo };
+    }
+
+    // Search by title or description (handle conflicts with rating OR)
+    if (search) {
+      const searchConditions = [
+        { title: { contains: search, mode: 'insensitive' as const } },
+        { 
+          courseDescription: {
+            detail: { contains: search, mode: 'insensitive' as const }
+          }
+        },
+      ];
+
+      if (where.OR && !where.AND) {
+        // Already has OR from ratings
+        where.AND = [
+          { OR: where.OR },
+          { OR: searchConditions }
+        ];
+        delete where.OR;
+      } else if (where.AND) {
+        // Already has AND, just add search OR
+        where.AND.push({ OR: searchConditions });
+      } else {
+        // No OR/AND yet, just set OR
+        where.OR = searchConditions;
+      }
+    }
+
+    // Count total
+    const total = await this.prisma.course.count({ where });
+
+    // Build orderBy
+    const validSortFields = ['createdAt', 'price', 'rating', 'title'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+    const orderBy: any = { [sortField]: sortOrder.toLowerCase() };
+
+    // Get courses with pagination
+    const courses = await this.prisma.course.findMany({
+      where,
+      include: {
+        teacher: {
+          select: { 
+            id: true, 
+            fullName: true,
+          },
+        },
+        category: { 
+          select: { 
+            id: true, 
+            title: true, 
+          } 
+        },
+      },
+      orderBy,
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    // Format response
+    const totalPages = Math.ceil(total / limit);
+
     const response: successResponse = {
-      message: 'Get all courses successfully',
+      message: 'Get courses with filters successfully',
       data: {
         items: courses,
         pagination: {
+          total,
           page,
           limit,
-          total,
-          totalPages: Math.ceil(total / limit),
-        },
-      },
+          totalPages,
+        }
+      }
     };
+
     return response;
   }
 
