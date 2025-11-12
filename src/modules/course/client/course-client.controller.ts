@@ -11,6 +11,7 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 import { CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
 import { CreateChapterDto, UpdateChapterDto } from './dto/chapter.dto';
+import { GetCoursesDto } from './dto/get-courses.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Query } from '@nestjs/common';
 import { ApiQuery } from '@nestjs/swagger';
@@ -26,14 +27,35 @@ export class CourseController {
   // route for all
   @Get()
   @Public()
-  @ApiOperation({ summary: 'Get all courses (pagination, sort, search)' })
-  @ApiQuery({ name: 'keySearch', type: String, required: false })
-  @ApiQuery({ name: 'sortField', type: String, required: false })
-  @ApiQuery({ name: 'sortOrder', type: String, required: false })
-  @ApiQuery({ name: 'page', type: Number, required: false })
-  @ApiQuery({ name: 'limit', type: Number, required: false })
-  async getAllCourses(@Query() filter: fullObjectFilter) {
-    return this.courseService.getAllCourses(filter);
+  @ApiOperation({ 
+    summary: 'Get all courses with advanced filters',
+    description: `
+      Get all published courses with filtering, pagination, sorting, and search:
+      - Filter by multiple categories (comma-separated IDs)
+      - Filter by multiple ratings (comma-separated values 1-5)
+      - Filter by price range (from-to)
+      - Search by course name or description
+      - Pagination and sorting support
+      
+      Examples:
+      - /course?categoryIds=uuid1,uuid2
+      - /course?ratings=4,5
+      - /course?priceFrom=0&priceTo=100
+      - /course?categoryIds=uuid1&ratings=4,5&priceFrom=50&priceTo=200
+      - /course?search=web development&sortBy=rating&sortOrder=DESC
+    `
+  })
+  @ApiQuery({ name: 'categoryIds', required: false, description: 'Filter by category IDs (comma-separated)', example: 'uuid1,uuid2' })
+  @ApiQuery({ name: 'ratings', required: false, description: 'Filter by ratings (comma-separated)', example: '4,5' })
+  @ApiQuery({ name: 'priceFrom', required: false, description: 'Minimum price', example: 0, type: Number })
+  @ApiQuery({ name: 'priceTo', required: false, description: 'Maximum price', example: 1000, type: Number })
+  @ApiQuery({ name: 'search', required: false, description: 'Search by course name or description' })
+  @ApiQuery({ name: 'page', required: false, description: 'Page number', example: 1, type: Number })
+  @ApiQuery({ name: 'limit', required: false, description: 'Items per page', example: 10, type: Number })
+  @ApiQuery({ name: 'sortBy', required: false, enum: ['createdAt', 'price', 'rating', 'title'], example: 'createdAt' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['ASC', 'DESC'], example: 'DESC' })
+  async getAllCourses(@Query() dto: GetCoursesDto) {
+    return this.courseService.getAllCoursesWithFilters(dto);
   }
 
   @Get('/:slug')
