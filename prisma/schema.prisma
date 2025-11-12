@@ -29,6 +29,12 @@ enum Status {
   inactive
 }
 
+enum LessonProgress {
+  not_started
+  in_progress
+  completed
+}
+
 model Admin {
   id           String    @id @default(uuid())
   fullName     String    @map("full_name") @db.VarChar(100)
@@ -94,6 +100,7 @@ model User {
   courses                  Course[]                @relation("TeacherCourses")
   emailVerificationTokens  EmailVerificationToken[]
   passwordResetTokens      PasswordResetToken[]
+  lessonProgress           UserLessonProgress[]
 
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime?       @updatedAt @map("updated_at")
@@ -204,11 +211,23 @@ model Lesson {
   chapter     Chapter    @relation(fields: [chapterId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   videoLesson VideoLesson?
   files       File[]
+  userProgress UserLessonProgress[]
   slug        String    @unique
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime?  @updatedAt @map("updated_at")
 
   @@map("lesson")
+}
+
+model UserLessonProgress {
+  id        String  @id @default(uuid())
+  userId    String  @map("user_id")
+  lessonId  String  @map("lesson_id")
+  progress  LessonProgress     @default(not_started) @map("progress")
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  lesson    Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("user_lesson_progress")
 }
 
 model VideoLesson {

@@ -1,13 +1,165 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { CreateLessonDto, LessonDto, UpdateLessonDto } from './dto/lesson.dto';
+import { CreateLessonDto, LessonDto, UpdateLessonDto, ChapterWithLessonsTreeItemDto, LessonTreeItemDto } from './dto/lesson.dto';
 import { generateUniqueSlug } from 'src/common/utils/slug.util';
 import { successResponse } from 'src/common/interfaces/response.interface';
 import { fullObjectFilter } from 'src/common/interfaces/objectFilter.interface';
+import { LessonProgress } from '@prisma/client';
 
 @Injectable()
 export class LessonService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async getLessonBySlugForStudent(lessonSlug: string, userId: string) {
+    const lesson = await this.prisma.lesson.findFirst({
+      where: { slug: lessonSlug },
+      include: {
+        chapter: {
+          include: {
+            course: {
+              select: {
+                id: true,
+                slug: true,
+                title: true,
+                isPublished: true,
+                deletedAt: true,
+              },
+            },
+          },
+        },
+        videoLesson: {
+          select: {
+            id: true,
+            videoId: true,
+            embedUrl: true,
+            duration: true,
+          },
+        },
+        files: {
+          select: {
+            id: true,
+            fileUrl: true,
+            fileName: true,
+            fileSize: true,
+          },
+        },
+        userProgress: {
+          where: { userId },
+          select: {
+            id: true,
+            progress: true,
+          },
+        },
+      },
+    });
+
+    if (!lesson) {
+      throw new NotFoundException('Lesson not found');
+    }
+
+    if (!lesson.chapter.course.isPublished || lesson.chapter.course.deletedAt) {
+      throw new NotFoundException('Course not found or not published');
+    }
+
+    await this.prisma.lesson.update({
+      where: { id: lesson.id },
+      data: { viewCount: { increment: 1 } },
+    });
+
+    const response: successResponse = {
+      message: 'Get lesson successfully',
+      data: {
+        id: lesson.id,
+        title: lesson.title,
+        slug: lesson.slug,
+        description: lesson.description,
+        position: lesson.position,
+        isFree: lesson.isFree,
+        viewCount: lesson.viewCount + 1,
+        videoLesson: lesson.videoLesson,
+        files: lesson.files,
+        progress: lesson.userProgress?.[0]?.progress || LessonProgress.not_started,
+        chapter: {
+          id: lesson.chapter.id,
+          title: lesson.chapter.title,
+          slug: lesson.chapter.slug,
+          course: {
+            id: lesson.chapter.course.id,
+            slug: lesson.chapter.course.slug,
+            title: lesson.chapter.course.title,
+          },
+        },
+        createdAt: lesson.createdAt,
+        updatedAt: lesson.updatedAt,
+      },
+    };
+    return response;
+  }
+
+
+  async getNextLessonByCourseSlug(courseSlug: string, userId: string) {
+    const course = await this.prisma.course.findFirst({
+      where: { slug: courseSlug, deletedAt: null, isPublished: true },
+      select: { id: true },
+    });
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+
+    const chapters = await this.prisma.chapter.findMany({
+      where: { courseId: course.id },
+      orderBy: { position: 'desc' },
+      include: {
+        lessons: {
+          orderBy: { position: 'desc' },
+          include: {
+            userProgress: {
+              where: { userId },
+              select: { progress: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!chapters || chapters.length === 0) {
+      throw new NotFoundException('No chapters found in this course');
+    }
+
+    let targetLessonSlug: string | null = null;
+    for (const chapter of chapters) {
+      if (!chapter.lessons || chapter.lessons.length === 0) {
+        continue;
+      }
+      
+      for (const lesson of chapter.lessons) {
+        const userProgressRecord = lesson.userProgress?.[0];
+        const progress = userProgressRecord?.progress;
+        
+        if (!userProgressRecord || progress !== 'completed') {
+          targetLessonSlug = lesson.slug;
+          break;
+        }
+      }
+      if (targetLessonSlug) break;
+    }
+
+    if (!targetLessonSlug) {
+      const lastChapterWithLesson = chapters.find((ch) => ch.lessons && ch.lessons.length > 0);
+      if (!lastChapterWithLesson) {
+        throw new NotFoundException('No lessons found in this course');
+      }
+      targetLessonSlug = lastChapterWithLesson.lessons[0].slug;
+    }
+
+    const response: successResponse = {
+      message: 'Get next lesson successfully',
+      data: {
+        lessonSlug: targetLessonSlug,
+      },
+    };
+    return response;
+  }
 
   async createLesson(chapterId: string, dto: CreateLessonDto, teacherId: string) {
     const chapter = await this.prisma.chapter.findFirst({
@@ -131,6 +283,87 @@ export class LessonService {
           totalPages: Math.ceil(total / limit),
         },
       },
+    };
+    return response;
+  }
+
+  async getLessonChapterTree(courseSlug: string, userId: string) {
+    const course = await this.prisma.course.findFirst({
+      where: { slug: courseSlug, deletedAt: null, isPublished: true },
+      select: { id: true },
+    });
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+
+    const chapters = await this.prisma.chapter.findMany({
+      where: { courseId: course.id },
+      orderBy: [{ parentId: 'asc' }, { position: 'asc' }],
+      include: {
+        lessons: {
+          orderBy: { position: 'asc' },
+          include: {
+            videoLesson: {
+              select: {
+                videoId: true,
+                embedUrl: true,
+                duration: true,
+              },
+            },
+            userProgress: {
+              where: { userId },
+              select: { progress: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!chapters || chapters.length === 0) {
+      throw new NotFoundException('No chapters found in this course');
+    }
+
+    const idToNode: Record<string, ChapterWithLessonsTreeItemDto> = {};
+    chapters.forEach((ch) => {
+      const lessons: LessonTreeItemDto[] = ch.lessons.map((lesson) => ({
+        id: lesson.id,
+        title: lesson.title,
+        slug: lesson.slug,
+        description: lesson.description,
+        position: lesson.position,
+        isFree: lesson.isFree,
+        viewCount: lesson.viewCount,
+        videoLesson: lesson.videoLesson,
+        progress: lesson.userProgress?.[0]?.progress || LessonProgress.not_started,
+        createdAt: lesson.createdAt,
+        updatedAt: lesson.updatedAt,
+      }));
+
+      idToNode[ch.id] = {
+        id: ch.id,
+        title: ch.title,
+        slug: ch.slug,
+        description: ch.description,
+        position: ch.position,
+        parentId: ch.parentId,
+        lessons,
+        children: [],
+      };
+    });
+
+    const roots: ChapterWithLessonsTreeItemDto[] = [];
+    chapters.forEach((ch) => {
+      const node = idToNode[ch.id];
+      if (ch.parentId && idToNode[ch.parentId]) {
+        idToNode[ch.parentId].children.push(node);
+      } else {
+        roots.push(node);
+      }
+    });
+
+    const response: successResponse = {
+      message: 'Get lesson chapter tree successfully',
+      data: { items: roots },
     };
     return response;
   }

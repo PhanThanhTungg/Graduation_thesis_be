@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNumber, IsOptional, IsString, MaxLength, ValidateNested, IsArray, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
+import { LessonProgress } from '@prisma/client';
 
 export class FileDto {
   @ApiProperty({ description: 'File URL' })
@@ -115,5 +116,70 @@ export class LessonDto {
 
   @ApiProperty()
   chapterId: string;
+}
+
+export class LessonTreeItemDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  title: string;
+
+  @ApiProperty()
+  slug: string;
+
+  @ApiPropertyOptional()
+  description?: string | null;
+
+  @ApiProperty()
+  position: number;
+
+  @ApiProperty()
+  isFree: boolean;
+
+  @ApiProperty()
+  viewCount: number;
+
+  @ApiPropertyOptional()
+  videoLesson?: {
+    videoId: string;
+    embedUrl: string;
+    duration: number | null;
+  } | null;
+
+  @ApiProperty({ enum: LessonProgress })
+  progress: LessonProgress;
+
+  @ApiProperty()
+  createdAt: Date;
+
+  @ApiPropertyOptional()
+  updatedAt?: Date | null;
+}
+
+export class ChapterWithLessonsTreeItemDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  title: string;
+
+  @ApiProperty()
+  slug: string;
+
+  @ApiPropertyOptional()
+  description?: string | null;
+
+  @ApiProperty()
+  position: number;
+
+  @ApiPropertyOptional()
+  parentId?: string | null;
+
+  @ApiProperty({ type: [LessonTreeItemDto] })
+  lessons: LessonTreeItemDto[];
+
+  @ApiProperty({ type: () => [ChapterWithLessonsTreeItemDto] })
+  children: ChapterWithLessonsTreeItemDto[] = [];
 }
 
