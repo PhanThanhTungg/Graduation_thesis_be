@@ -29,6 +29,11 @@ enum Status {
   inactive
 }
 
+enum DiscountType {
+  percentage
+  fixed_amount
+}
+
 model Admin {
   id           String    @id @default(uuid())
   fullName     String    @map("full_name") @db.VarChar(100)
@@ -94,6 +99,7 @@ model User {
   courses                  Course[]                @relation("TeacherCourses")
   emailVerificationTokens  EmailVerificationToken[]
   passwordResetTokens      PasswordResetToken[]
+  vouchersCreated          Voucher[]               @relation("VoucherCreator")
 
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime?       @updatedAt @map("updated_at")
@@ -152,6 +158,7 @@ model Course {
   category            Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseDescription   CourseDescription @relation(fields: [courseDescriptionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   chapters            Chapter[]
+  vouchers            Voucher[]
 
   createdAt           DateTime          @default(now()) @map("created_at")
   updatedAt           DateTime?         @updatedAt @map("updated_at")
@@ -261,4 +268,26 @@ model PasswordResetToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("password_reset_tokens")
+}
+
+model Voucher {
+  id            String       @id @default(uuid())
+  code          String       @unique @db.VarChar(50)
+  courseId      String?      @map("course_id")
+  discountType  DiscountType @map("discount_type")
+  discountValue Float        @map("discount_value")
+  startDate     DateTime     @map("start_date")
+  endDate       DateTime     @map("end_date")
+  usageLimit    Int?         @map("usage_limit")
+  usedCount     Int          @default(0) @map("used_count")
+  createdBy     String       @map("created_by")
+  status        Status       @default(active)
+  
+  course        Course?      @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  creator       User         @relation("VoucherCreator", fields: [createdBy], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime?    @updatedAt @map("updated_at")
+
+  @@map("voucher")
 }
