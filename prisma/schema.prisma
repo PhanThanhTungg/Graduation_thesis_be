@@ -100,6 +100,8 @@ model User {
   emailVerificationTokens  EmailVerificationToken[]
   passwordResetTokens      PasswordResetToken[]
   vouchersCreated          Voucher[]               @relation("VoucherCreator")
+  reviews                  Review[]                @relation("UserReviews")
+  reviewReplies            ReviewReply[]           @relation("UserReviewReplies")
 
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime?       @updatedAt @map("updated_at")
@@ -159,6 +161,7 @@ model Course {
   courseDescription   CourseDescription @relation(fields: [courseDescriptionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   chapters            Chapter[]
   vouchers            Voucher[]
+  reviews             Review[]          @relation("CourseReviews")
 
   createdAt           DateTime          @default(now()) @map("created_at")
   updatedAt           DateTime?         @updatedAt @map("updated_at")
@@ -290,4 +293,38 @@ model Voucher {
   updatedAt     DateTime?    @updatedAt @map("updated_at")
 
   @@map("voucher")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  courseId  String   @map("course_id")
+  rating    Int      // Rating from 1 to 5
+  comment   String?  @db.Text
+  
+  user      User     @relation("UserReviews", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  course    Course   @relation("CourseReviews", fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  replies   ReviewReply[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  // Constraint: One user can only review a course once
+  @@unique([userId, courseId])
+  @@map("review")
+}
+
+model ReviewReply {
+  id        String   @id @default(uuid())
+  reviewId  String   @map("review_id")
+  userId    String   @map("user_id")
+  comment   String   @db.Text
+  
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user      User     @relation("UserReviewReplies", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("review_reply")
 }
