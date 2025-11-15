@@ -9,7 +9,7 @@ import {
 } from 'src/common/guards/client-role.guard';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
-import { CreateLessonDto, UpdateLessonDto } from './dto/lesson.dto';
+import { CreateLessonDto, UpdateLessonDto, UpdateLessonProgressDto } from './dto/lesson.dto';
 import { fullObjectFilter } from 'src/common/interfaces/objectFilter.interface';
 
 @Controller('lesson')
@@ -18,7 +18,59 @@ import { fullObjectFilter } from 'src/common/interfaces/objectFilter.interface';
 @UseGuards(UniversalAuthGuard, ClientRoleGuard)
 export class LessonController {
   constructor(private readonly lessonService: LessonService) {}
+  
 
+  // route for student
+  @Get('/lesson-chapter-tree/:courseSlug')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.student)
+  @ApiOperation({ summary: 'Get lesson chapter tree (all)' })
+  @ApiParam({ name: 'courseSlug', type: String, required: true })
+  async getLessonChapterTree(
+    @Param('courseSlug') courseSlug: string,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.lessonService.getLessonChapterTree(courseSlug, user.id);
+  }
+
+  @Get('/next-by-course/:courseSlug')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.student)
+  @ApiOperation({ summary: 'Get next lesson slug by course slug for current student' })
+  @ApiParam({ name: 'courseSlug', type: String, required: true })
+  async getNextLessonByCourseSlug(
+    @Param('courseSlug') courseSlug: string,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.lessonService.getNextLessonByCourseSlug(courseSlug, user.id);
+  }
+
+  @Get('/:lessonSlug')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.student)
+  @ApiOperation({ summary: 'Get lesson by slug (student)' })
+  @ApiParam({ name: 'lessonSlug', type: String, required: true })
+  async getLessonBySlugForStudent(
+    @Param('lessonSlug') lessonSlug: string,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.lessonService.getLessonBySlugForStudent(lessonSlug, user.id);
+  }
+
+  @Post('/ping/status-lesson/:lessonSlug')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.student)
+  @ApiOperation({ summary: 'Update lesson progress status (student)' })
+  @ApiParam({ name: 'lessonSlug', type: String, required: true })
+  async pingStatusLesson(
+    @Param('lessonSlug') lessonSlug: string,
+    @Body() dto: UpdateLessonProgressDto,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.lessonService.pingStatusLesson(lessonSlug, dto.progress, user.id);
+  }
+
+  // route for teacher
   @Post('/teacher-area/chapter/:chapterId')
   @ApiBearerAuth()
   @ClientRoles(UserRole.teacher)
