@@ -33,6 +33,8 @@ enum LessonProgress {
   not_started
   in_progress
   completed
+}
+
 enum DiscountType {
   percentage
   fixed_amount
