@@ -13,6 +13,8 @@ import { ClientCategoryModule } from './modules/category/client/client-category.
 import { LessonClientModule } from './modules/lesson/client/lesson-client.module';
 import { AdminCourseModule } from './modules/course/admin/admin-course.module';
 import { AdminUserModule } from './modules/user/admin/admin-user.module';
+import { VoucherClientModule } from './modules/voucher/client/voucher-client.module';
+import { ReviewClientModule } from './modules/review/client/review-client.module';
 
 @Module({
   imports: [
@@ -30,6 +32,8 @@ import { AdminUserModule } from './modules/user/admin/admin-user.module';
     ClientCategoryModule,
     LessonClientModule,
     AdminUserModule,
+    VoucherClientModule,
+    ReviewClientModule,
   ],
   providers: [
   ],

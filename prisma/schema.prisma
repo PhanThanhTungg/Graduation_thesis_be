@@ -33,6 +33,9 @@ enum LessonProgress {
   not_started
   in_progress
   completed
+enum DiscountType {
+  percentage
+  fixed_amount
 }
 
 model Admin {
@@ -101,6 +104,9 @@ model User {
   emailVerificationTokens  EmailVerificationToken[]
   passwordResetTokens      PasswordResetToken[]
   lessonProgress           UserLessonProgress[]
+  vouchersCreated          Voucher[]               @relation("VoucherCreator")
+  reviews                  Review[]                @relation("UserReviews")
+  reviewReplies            ReviewReply[]           @relation("UserReviewReplies")
 
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime?       @updatedAt @map("updated_at")
@@ -159,6 +165,8 @@ model Course {
   category            Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseDescription   CourseDescription @relation(fields: [courseDescriptionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   chapters            Chapter[]
+  vouchers            Voucher[]
+  reviews             Review[]          @relation("CourseReviews")
 
   createdAt           DateTime          @default(now()) @map("created_at")
   updatedAt           DateTime?         @updatedAt @map("updated_at")
@@ -280,4 +288,60 @@ model PasswordResetToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("password_reset_tokens")
+}
+
+model Voucher {
+  id            String       @id @default(uuid())
+  code          String       @unique @db.VarChar(50)
+  courseId      String?      @map("course_id")
+  discountType  DiscountType @map("discount_type")
+  discountValue Float        @map("discount_value")
+  startDate     DateTime     @map("start_date")
+  endDate       DateTime     @map("end_date")
+  usageLimit    Int?         @map("usage_limit")
+  usedCount     Int          @default(0) @map("used_count")
+  createdBy     String       @map("created_by")
+  status        Status       @default(active)
+  
+  course        Course?      @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  creator       User         @relation("VoucherCreator", fields: [createdBy], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime?    @updatedAt @map("updated_at")
+
+  @@map("voucher")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  courseId  String   @map("course_id")
+  rating    Int      // Rating from 1 to 5
+  comment   String?  @db.Text
+  
+  user      User     @relation("UserReviews", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  course    Course   @relation("CourseReviews", fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  replies   ReviewReply[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  // Constraint: One user can only review a course once
+  @@unique([userId, courseId])
+  @@map("review")
+}
+
+model ReviewReply {
+  id        String   @id @default(uuid())
+  reviewId  String   @map("review_id")
+  userId    String   @map("user_id")
+  comment   String   @db.Text
+  
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user      User     @relation("UserReviewReplies", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("review_reply")
 }
