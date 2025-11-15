@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsOptional, IsString, MaxLength, ValidateNested, IsArray, IsBoolean } from 'class-validator';
+import { IsNumber, IsOptional, IsString, MaxLength, ValidateNested, IsArray, IsBoolean, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
 import { LessonProgress } from '@prisma/client';
 
@@ -93,6 +93,12 @@ export class UpdateLessonDto {
   @IsOptional()
   @IsBoolean()
   isFree?: boolean;
+}
+
+export class UpdateLessonProgressDto {
+  @ApiProperty({ description: 'Lesson progress status', enum: LessonProgress })
+  @IsEnum(LessonProgress)
+  progress: LessonProgress;
 }
 
 export class LessonDto {

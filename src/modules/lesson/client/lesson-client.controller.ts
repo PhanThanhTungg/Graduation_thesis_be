@@ -9,7 +9,7 @@ import {
 } from 'src/common/guards/client-role.guard';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
-import { CreateLessonDto, UpdateLessonDto } from './dto/lesson.dto';
+import { CreateLessonDto, UpdateLessonDto, UpdateLessonProgressDto } from './dto/lesson.dto';
 import { fullObjectFilter } from 'src/common/interfaces/objectFilter.interface';
 
 @Controller('lesson')
@@ -55,6 +55,19 @@ export class LessonController {
     @CurrentUser() user: currentClientUser,
   ) {
     return this.lessonService.getLessonBySlugForStudent(lessonSlug, user.id);
+  }
+
+  @Post('/ping/status-lesson/:lessonSlug')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.student)
+  @ApiOperation({ summary: 'Update lesson progress status (student)' })
+  @ApiParam({ name: 'lessonSlug', type: String, required: true })
+  async pingStatusLesson(
+    @Param('lessonSlug') lessonSlug: string,
+    @Body() dto: UpdateLessonProgressDto,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.lessonService.pingStatusLesson(lessonSlug, dto.progress, user.id);
   }
 
   // route for teacher

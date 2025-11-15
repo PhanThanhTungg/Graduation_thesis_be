@@ -108,14 +108,14 @@ export class LessonService {
 
     const chapters = await this.prisma.chapter.findMany({
       where: { courseId: course.id },
-      orderBy: { position: 'desc' },
+      orderBy: { position:'asc' },
       include: {
         lessons: {
-          orderBy: { position: 'desc' },
+          orderBy: { position: 'asc' },
           include: {
             userProgress: {
               where: { userId },
-              select: { progress: true },
+              select: { id: true, progress: true },
             },
           },
         },
@@ -126,36 +126,67 @@ export class LessonService {
       throw new NotFoundException('No chapters found in this course');
     }
 
-    let targetLessonSlug: string | null = null;
+    let inProgressLesson: { id: string; slug: string; userProgress: { id: string; progress: LessonProgress }[] } | null = null;
+    let firstNotStartedLesson: { id: string; slug: string; userProgress: { id: string; progress: LessonProgress }[] } | null = null;
+    let firstLesson: { id: string; slug: string; userProgress: { id: string; progress: LessonProgress }[] } | null = null;
+
     for (const chapter of chapters) {
       if (!chapter.lessons || chapter.lessons.length === 0) {
         continue;
       }
       
       for (const lesson of chapter.lessons) {
+        if (!firstLesson) {
+          firstLesson = lesson;
+        }
+
         const userProgressRecord = lesson.userProgress?.[0];
         const progress = userProgressRecord?.progress;
-        
-        if (!userProgressRecord || progress !== 'completed') {
-          targetLessonSlug = lesson.slug;
+
+        if (progress === 'in_progress') {
+          inProgressLesson = lesson;
           break;
+        } else if (!userProgressRecord || progress === 'not_started') {
+          if (!firstNotStartedLesson) {
+            firstNotStartedLesson = lesson;
+          }
         }
       }
-      if (targetLessonSlug) break;
+
+      if (inProgressLesson) {
+        break;
+      }
     }
 
-    if (!targetLessonSlug) {
-      const lastChapterWithLesson = chapters.find((ch) => ch.lessons && ch.lessons.length > 0);
-      if (!lastChapterWithLesson) {
-        throw new NotFoundException('No lessons found in this course');
+    const targetLesson = inProgressLesson || firstNotStartedLesson || firstLesson;
+    if (!targetLesson) {
+      throw new NotFoundException('No lessons found in this course');
+    }
+
+    const targetProgressRecord = targetLesson.userProgress?.[0];
+    const targetProgress = targetProgressRecord?.progress;
+
+    if (!targetProgressRecord || targetProgress === 'not_started') {
+      if (targetProgressRecord) {
+        await this.prisma.userLessonProgress.update({
+          where: { id: targetProgressRecord.id },
+          data: { progress: LessonProgress.in_progress },
+        });
+      } else {
+        await this.prisma.userLessonProgress.create({
+          data: {
+            userId,
+            lessonId: targetLesson.id,
+            progress: LessonProgress.in_progress,
+          },
+        });
       }
-      targetLessonSlug = lastChapterWithLesson.lessons[0].slug;
     }
 
     const response: successResponse = {
       message: 'Get next lesson successfully',
       data: {
-        lessonSlug: targetLessonSlug,
+        lessonSlug: targetLesson.slug,
       },
     };
     return response;
@@ -539,6 +570,69 @@ export class LessonService {
       data: lesson,
     };
     return response;
+  }
+
+  async pingStatusLesson(lessonSlug: string, progress: LessonProgress, userId: string) {
+    const lesson = await this.prisma.lesson.findFirst({
+      where: { slug: lessonSlug },
+      include: {
+        chapter: {
+          include: {
+            course: {
+              select: {
+                id: true,
+                isPublished: true,
+                deletedAt: true,
+              },
+            },
+          },
+        },
+        userProgress: {
+          where: { userId },
+          select: {
+            id: true,
+            progress: true,
+          },
+        },
+      },
+    });
+
+    if (!lesson) {
+      throw new NotFoundException('Lesson not found');
+    }
+
+    if (!lesson.chapter.course.isPublished || lesson.chapter.course.deletedAt) {
+      throw new NotFoundException('Course not found or not published');
+    }
+
+    const existingProgress = lesson.userProgress?.[0];
+
+    if (existingProgress) {
+      await this.prisma.userLessonProgress.update({
+        where: { id: existingProgress.id },
+        data: { progress },
+      });
+
+      const response: successResponse = {
+        message: 'Lesson status updated successfully',
+        data: { progress },
+      };
+      return response;
+    } else {
+      await this.prisma.userLessonProgress.create({
+        data: {
+          userId,
+          lessonId: lesson.id,
+          progress,
+        },
+      });
+
+      const response: successResponse = {
+        message: 'Lesson status updated successfully',
+        data: { progress },
+      };
+      return response;
+    }
   }
 }
 
