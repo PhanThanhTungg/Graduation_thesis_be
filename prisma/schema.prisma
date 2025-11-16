@@ -109,6 +109,10 @@ model User {
   vouchersCreated          Voucher[]               @relation("VoucherCreator")
   reviews                  Review[]                @relation("UserReviews")
   reviewReplies            ReviewReply[]           @relation("UserReviewReplies")
+  platformTransactions     PlatformTransaction[]   @relation("UserPlatformTransactions")
+
+  wallet                Wallet?
+  orders                Order[]                 @relation("StudentOrders")
 
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime?       @updatedAt @map("updated_at")
@@ -169,6 +173,8 @@ model Course {
   chapters            Chapter[]
   vouchers            Voucher[]
   reviews             Review[]          @relation("CourseReviews")
+
+  orders                Order[]                 @relation("CourseOrders")
 
   createdAt           DateTime          @default(now()) @map("created_at")
   updatedAt           DateTime?         @updatedAt @map("updated_at")
@@ -307,6 +313,7 @@ model Voucher {
   
   course        Course?      @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   creator       User         @relation("VoucherCreator", fields: [createdBy], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  orders        Order[]      @relation("VoucherOrders")
 
   createdAt     DateTime     @default(now()) @map("created_at")
   updatedAt     DateTime?    @updatedAt @map("updated_at")
@@ -347,3 +354,211 @@ model ReviewReply {
 
   @@map("review_reply")
 }
+
+
+// -------------schema for payment system : User-------------
+enum TransactionType {
+  deposit           // Nạp tiền
+  withdrawal        // Rút tiền 
+}
+enum TransactionStatus {
+  pending
+  processing
+  completed
+  cancelled
+}
+enum PaymentMethod {
+  paypal
+}
+enum OrderStatus {
+  processing
+  success
+  cancelled
+}
+
+model Wallet {
+  id              String    @id @default(uuid())
+  userId          String    @unique @map("user_id")
+  balance         Float     @default(0) // Số dư hiện tại
+  totalDeposited  Float     @default(0) @map("total_deposited") // Tổng tiền đã nạp
+  totalWithdrawn  Float     @default(0) @map("total_withdrawn") // Tổng tiền đã rút
+  totalEarned     Float     @default(0) @map("total_earned") // Tổng tiền kiếm được từ khóa học
+  totalSpent      Float     @default(0) @map("total_spent") // Tổng tiền đã chi (upload, AI)
+  
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  transactions    Transaction[]
+  withdrawals     Withdrawal[]
+
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime? @updatedAt @map("updated_at")
+
+  @@map("wallet")
+}
+
+model Transaction {
+  id              String            @id @default(uuid())
+  walletId        String            @map("wallet_id")
+  type            TransactionType
+  amount          Float             // Số tiền (dương: cộng, âm: trừ)
+  balanceBefore   Float             @map("balance_before") // Số dư trước giao dịch
+  balanceAfter    Float             @map("balance_after") // Số dư sau giao dịch
+  status          TransactionStatus @default(pending)
+  description     String?           @db.Text
+  referenceId     String?           @map("reference_id") // ID tham chiếu (orderId, withdrawalId, etc.)
+  metadata        Json?             // Thông tin bổ sung
+  
+  wallet          Wallet            @relation(fields: [walletId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime?         @updatedAt @map("updated_at")
+
+  @@index([walletId])
+  @@index([type])
+  @@index([status])
+  @@map("transaction")
+}
+
+// Model Yêu cầu rút tiền
+model Withdrawal {
+  id              String           @id @default(uuid())
+  walletId        String           @map("wallet_id")
+  amount          Float
+  status          TransactionStatus @default(pending)
+  bankName        String?          @map("bank_name") @db.VarChar(100)
+  bankAccount     String?          @map("bank_account") @db.VarChar(50)
+  bankAccountName String?          @map("bank_account_name") @db.VarChar(100)
+  note            String?          @db.Text
+  rejectionReason String?          @map("rejection_reason") @db.Text
+  processedBy     String?          @map("processed_by") // Admin ID xử lý
+  processedAt     DateTime?        @map("processed_at")
+  
+  wallet          Wallet           @relation(fields: [walletId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime?        @updatedAt @map("updated_at")
+
+  @@index([walletId])
+  @@index([status])
+  @@map("withdrawal")
+}
+
+// Model Đơn hàng (học sinh mua khóa học)
+model Order {
+  id              String        @id @default(uuid())
+  userId          String        @map("user_id") // Học sinh mua
+  courseId        String        @map("course_id")
+  discountAmount  Float         @default(0) @map("discount_amount") // Số tiền giảm giá
+  finalPrice      Float         @map("final_price") // Giá cuối cùng
+  voucherId       String?       @map("voucher_id")
+  status          OrderStatus   @default(processing)
+  paymentMethod   PaymentMethod @map("payment_method")
+  paymentId       String?       @map("payment_id") // ID từ cổng thanh toán
+  
+  user            User          @relation("StudentOrders", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  course          Course        @relation("CourseOrders", fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  voucher         Voucher?      @relation("VoucherOrders", fields: [voucherId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime?     @updatedAt @map("updated_at")
+  completedAt     DateTime?     @map("completed_at")
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
+  @@map("order")
+}
+
+model SystemFee {
+  id                    String    @id @default(uuid())
+  uploadLessonFee       Float     @default(0) @map("upload_lesson_fee") // Phí upload 1 bài học
+  aiFeatureBaseFee      Float     @default(0) @map("ai_feature_base_fee") // Phí cơ bản dùng AI
+  platformCommission    Float     @default(10) @map("platform_commission") // % hoa hồng nền tảng
+  minWithdrawalAmount   Float     @default(100000) @map("min_withdrawal_amount") // Số tiền rút tối thiểu
+  
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime? @updatedAt @map("updated_at")
+
+  @@map("system_fee")
+}
+
+// -------------schema for payment system : Platform -------------
+enum PlatformTransactionType {
+  commission_income      // Thu hoa hồng từ khóa học (10%)
+  upload_fee_income      // Thu phí upload bài học
+  ai_fee_income          // Thu phí sử dụng AI
+  // còn nhiều loại khác nữa, thêm sau ...
+}
+
+// Model Ví tổng của nền tảng
+model PlatformWallet {
+  id                    String    @id @default(uuid())
+  revenue               Float     @default(0)
+  
+  transactions          PlatformTransaction[]
+  
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime? @updatedAt @map("updated_at")
+
+  @@map("platform_wallet")
+}
+
+model PlatformTransaction {
+  id              String                   @id @default(uuid())
+  walletId        String                   @map("wallet_id")
+  type            PlatformTransactionType
+  amount          Float                    // Dương: thu, Âm: chi
+  balanceBefore   Float                    @map("balance_before")
+  balanceAfter    Float                    @map("balance_after")
+  description     String                   @db.Text
+  performedBy     String?                  @map("performed_by") // Admin ID thực hiện
+  userId          String?                  @map("user_id") // User liên quan đến giao dịch
+  metadata        Json?
+  
+  user            User?                    @relation("UserPlatformTransactions", fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  wallet          PlatformWallet           @relation(fields: [walletId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  createdAt       DateTime                 @default(now()) @map("created_at")
+
+  @@index([walletId])
+  @@index([type])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("platform_transaction")
+}
+
+// // Model Báo cáo tài chính (snapshot theo kỳ)
+// model FinancialReport {
+//   id                      String    @id @default(uuid())
+//   periodType              String    @map("period_type") // 'daily', 'weekly', 'monthly', 'yearly'
+//   periodStart             DateTime  @map("period_start")
+//   periodEnd               DateTime  @map("period_end")
+  
+//   // Doanh thu
+//   commissionRevenue       Float     @default(0) @map("commission_revenue")
+//   uploadFeeRevenue        Float     @default(0) @map("upload_fee_revenue")
+//   aiFeeRevenue            Float     @default(0) @map("ai_fee_revenue")
+//   totalRevenue            Float     @default(0) @map("total_revenue")
+  
+//   // Chi phí
+//   withdrawalExpense       Float     @default(0) @map("withdrawal_expense")
+//   refundExpense           Float     @default(0) @map("refund_expense")
+//   operatingExpense        Float     @default(0) @map("operating_expense")
+//   paymentGatewayFee       Float     @default(0) @map("payment_gateway_fee")
+//   totalExpense            Float     @default(0) @map("total_expense")
+  
+//   // Thống kê
+//   netProfit               Float     @default(0) @map("net_profit") // Lợi nhuận ròng
+//   profitMargin            Float     @default(0) @map("profit_margin") // % lợi nhuận
+//   totalOrders             Int       @default(0) @map("total_orders")
+//   totalWithdrawals        Int       @default(0) @map("total_withdrawals")
+  
+//   openingBalance          Float     @default(0) @map("opening_balance") // Số dư đầu kỳ
+//   closingBalance          Float     @default(0) @map("closing_balance") // Số dư cuối kỳ
+  
+//   generatedAt             DateTime  @default(now()) @map("generated_at")
+//   generatedBy             String?   @map("generated_by") // Admin ID tạo báo cáo
+
+//   @@index([periodType])
+//   @@index([periodStart, periodEnd])
+//   @@map("financial_report")
+// }
