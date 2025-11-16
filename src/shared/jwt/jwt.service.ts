@@ -34,18 +34,18 @@ export class JwtAuthService {
   }
 
   async generateAccessToken(payload: JwtPayload): Promise<string> {
-    return this.jwtService.signAsync(payload, {
-      secret: this.envService.get('JWT_SECRET'),
-      expiresIn: this.envService.get('JWT_EXPIRES_IN'),
+    return this.jwtService.signAsync(payload as any, {
+      secret: this.envService.get('JWT_SECRET') as string,
+      expiresIn: +this.envService.get('JWT_EXPIRES_IN'),
     })
   }
 
   async generateRefreshToken(payload: JwtPayload): Promise<string> {
     return this.jwtService.signAsync(
-      { sub: payload.sub, type: payload.type },
+      { sub: payload.sub, type: payload.type } as any,
       {
-        secret: this.envService.get('JWT_REFRESH_SECRET'),
-        expiresIn: this.envService.get('JWT_REFRESH_EXPIRES_IN'),
+        secret: this.envService.get('JWT_REFRESH_SECRET') as string,
+        expiresIn:+this.envService.get('JWT_REFRESH_EXPIRES_IN'),
       },
     )
   }
