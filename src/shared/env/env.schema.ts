@@ -19,11 +19,11 @@ export class EnvSchema {
   @IsString()
   JWT_REFRESH_SECRET: string
 
-  @IsString()
-  JWT_EXPIRES_IN: string
+  @IsNumber()
+  JWT_EXPIRES_IN: number
 
-  @IsString()
-  JWT_REFRESH_EXPIRES_IN: string
+  @IsNumber()
+  JWT_REFRESH_EXPIRES_IN: number
 
   @IsString()
   FRONTEND_CORS_ORIGIN: string
