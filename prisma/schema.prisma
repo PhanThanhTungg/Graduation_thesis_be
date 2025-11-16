@@ -462,6 +462,7 @@ model Order {
   updatedAt       DateTime?     @updatedAt @map("updated_at")
   completedAt     DateTime?     @map("completed_at")
 
+  @@unique([userId, courseId])
   @@index([userId])
   @@index([courseId])
   @@index([status])
