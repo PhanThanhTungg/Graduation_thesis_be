@@ -15,6 +15,7 @@ import { AdminCourseModule } from './modules/course/admin/admin-course.module';
 import { AdminUserModule } from './modules/user/admin/admin-user.module';
 import { VoucherClientModule } from './modules/voucher/client/voucher-client.module';
 import { ReviewClientModule } from './modules/review/client/review-client.module';
+import { PaymentClientModule } from './modules/payment/client/payment-client.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { ReviewClientModule } from './modules/review/client/review-client.module
     AdminUserModule,
     VoucherClientModule,
     ReviewClientModule,
+    PaymentClientModule,
   ],
   providers: [
   ],

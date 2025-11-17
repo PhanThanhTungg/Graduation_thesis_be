@@ -68,4 +68,16 @@ export class EnvSchema {
 
   @IsString()
   RECAPTCHA_SECRET_KEY: string
+
+  @IsString()
+  PAYPAL_CLIENTID: string
+
+  @IsString()
+  PAYPAL_SECRET: string
+
+  @IsString()
+  PAYPAL_BASEURL: string
+
+  @IsString()
+  PAYPAL_REDIRECT_BASE_URL: string
 }

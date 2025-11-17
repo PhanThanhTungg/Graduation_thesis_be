@@ -445,6 +445,7 @@ model Withdrawal {
 // Model Đơn hàng (học sinh mua khóa học)
 model Order {
   id              String        @id @default(uuid())
+  Order_id        String        @unique @map("order_id")
   userId          String        @map("user_id") // Học sinh mua
   courseId        String        @map("course_id")
   discountAmount  Float         @default(0) @map("discount_amount") // Số tiền giảm giá
