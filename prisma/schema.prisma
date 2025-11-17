@@ -109,6 +109,7 @@ model User {
   vouchersCreated          Voucher[]               @relation("VoucherCreator")
   reviews                  Review[]                @relation("UserReviews")
   reviewReplies            ReviewReply[]           @relation("UserReviewReplies")
+  notes                    Note[]                  @relation("UserNotes")
 
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime?       @updatedAt @map("updated_at")
@@ -222,6 +223,7 @@ model Lesson {
   videoLesson VideoLesson?
   files       File[]
   userProgress UserLessonProgress[]
+  notes       Note[]     @relation("LessonNotes")
   slug        String    @unique
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime?  @updatedAt @map("updated_at")
@@ -346,4 +348,19 @@ model ReviewReply {
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("review_reply")
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  lessonId  String   @map("lesson_id")
+  content   String   @db.Text
+  timestamp Int      // Timestamp in seconds on the video
+  
+  user      User     @relation("UserNotes", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  lesson    Lesson   @relation("LessonNotes", fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@map("note")
 }
