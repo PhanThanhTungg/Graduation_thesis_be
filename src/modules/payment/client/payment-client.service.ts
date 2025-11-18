@@ -247,6 +247,33 @@ export class PaymentClientService {
     return response;
   }
 
+  async checkPurchase(courseId: string, currentUser: currentClientUser) {
+    const order = await this.prisma.order.findUnique({
+      where: {
+        userId_courseId: {
+          userId: currentUser.id,
+          courseId: courseId,
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+
+    const hasPurchased = order?.status === OrderStatus.success;
+
+    const response: successResponse = {
+      message: 'Check purchase status successfully',
+      data: {
+        hasPurchased,
+        orderId: order?.id || null,
+      },
+    };
+
+    return response;
+  }
+
   private async saveOrderRecord(
     existingOrderId: string | undefined,
     data: Prisma.OrderUncheckedCreateInput,

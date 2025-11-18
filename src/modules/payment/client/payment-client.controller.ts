@@ -1,6 +1,6 @@
-import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { PaymentClientService } from './payment-client.service';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { UniversalAuthGuard } from 'src/common/guards/universal-auth.guard';
 import { ClientRoleGuard, ClientRoles } from 'src/common/guards/client-role.guard';
 import { UserRole } from 'src/common/enums/common.enum';
@@ -36,6 +36,17 @@ export class PaymentClientController {
     @CurrentUser() user: currentClientUser,
   ) {
     return this.paymentService.captureOrder(orderId, dto, user);
+  }
+
+  @Get('check-purchase')
+  @ClientRoles(UserRole.student)
+  @ApiOperation({ summary: 'Check if user has purchased a course' })
+  @ApiQuery({ name: 'courseId', type: String, required: true })
+  async checkPurchase(
+    @Query('courseId') courseId: string,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.paymentService.checkPurchase(courseId, user);
   }
 }
 
