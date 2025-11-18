@@ -68,4 +68,13 @@ export class EnvSchema {
 
   @IsString()
   RECAPTCHA_SECRET_KEY: string
+
+  @IsString()
+  GEMINI_API_KEY: string
+
+  @IsNumber()
+  GEMINI_TEMPERATURE: number
+
+  @IsNumber()
+  GEMINI_MAX_TOKEN: number
 }
