@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { CreateVoucherDto, UpdateVoucherDto } from './dto/voucher.dto';
 import { ApplyVoucherDto } from './dto/apply-voucher.dto';
@@ -22,7 +27,9 @@ export class VoucherClientService {
       });
 
       if (!course) {
-        throw new BadRequestException('Course not found or you do not have permission');
+        throw new BadRequestException(
+          'Course not found or you do not have permission',
+        );
       }
     }
 
@@ -44,7 +51,10 @@ export class VoucherClientService {
     }
 
     // Validate discount value
-    if (dto.discountType === DiscountType.percentage && dto.discountValue > 100) {
+    if (
+      dto.discountType === DiscountType.percentage &&
+      dto.discountValue > 100
+    ) {
       throw new BadRequestException('Percentage discount cannot exceed 100%');
     }
 
@@ -84,7 +94,11 @@ export class VoucherClientService {
     return response;
   }
 
-  async updateVoucher(id: string, dto: UpdateVoucherDto, currentUser: currentClientUser) {
+  async updateVoucher(
+    id: string,
+    dto: UpdateVoucherDto,
+    currentUser: currentClientUser,
+  ) {
     // Check if voucher exists and belongs to user
     const voucher = await this.prisma.voucher.findFirst({
       where: {
@@ -94,7 +108,9 @@ export class VoucherClientService {
     });
 
     if (!voucher) {
-      throw new NotFoundException('Voucher not found or you do not have permission');
+      throw new NotFoundException(
+        'Voucher not found or you do not have permission',
+      );
     }
 
     // Check if course exists and belongs to teacher (if courseId is updated)
@@ -108,7 +124,9 @@ export class VoucherClientService {
       });
 
       if (!course) {
-        throw new BadRequestException('Course not found or you do not have permission');
+        throw new BadRequestException(
+          'Course not found or you do not have permission',
+        );
       }
     }
 
@@ -124,7 +142,9 @@ export class VoucherClientService {
     }
 
     // Validate dates
-    const startDate = dto.startDate ? new Date(dto.startDate) : voucher.startDate;
+    const startDate = dto.startDate
+      ? new Date(dto.startDate)
+      : voucher.startDate;
     const endDate = dto.endDate ? new Date(dto.endDate) : voucher.endDate;
 
     if (startDate >= endDate) {
@@ -133,7 +153,10 @@ export class VoucherClientService {
 
     // Validate discount value
     const discountType = dto.discountType || voucher.discountType;
-    const discountValue = dto.discountValue !== undefined ? dto.discountValue : voucher.discountValue;
+    const discountValue =
+      dto.discountValue !== undefined
+        ? dto.discountValue
+        : voucher.discountValue;
 
     if (discountType === DiscountType.percentage && discountValue > 100) {
       throw new BadRequestException('Percentage discount cannot exceed 100%');
@@ -142,9 +165,12 @@ export class VoucherClientService {
     const updateData: any = {};
     if (dto.code !== undefined) updateData.code = dto.code;
     if (dto.courseId !== undefined) updateData.courseId = dto.courseId;
-    if (dto.discountType !== undefined) updateData.discountType = dto.discountType;
-    if (dto.discountValue !== undefined) updateData.discountValue = dto.discountValue;
-    if (dto.startDate !== undefined) updateData.startDate = new Date(dto.startDate);
+    if (dto.discountType !== undefined)
+      updateData.discountType = dto.discountType;
+    if (dto.discountValue !== undefined)
+      updateData.discountValue = dto.discountValue;
+    if (dto.startDate !== undefined)
+      updateData.startDate = new Date(dto.startDate);
     if (dto.endDate !== undefined) updateData.endDate = new Date(dto.endDate);
     if (dto.usageLimit !== undefined) updateData.usageLimit = dto.usageLimit;
     if (dto.status !== undefined) updateData.status = dto.status;
@@ -186,7 +212,9 @@ export class VoucherClientService {
     });
 
     if (!voucher) {
-      throw new NotFoundException('Voucher not found or you do not have permission');
+      throw new NotFoundException(
+        'Voucher not found or you do not have permission',
+      );
     }
 
     await this.prisma.voucher.delete({
@@ -314,77 +342,29 @@ export class VoucherClientService {
 
   async applyVoucher(dto: ApplyVoucherDto) {
     const voucher = await this.prisma.voucher.findUnique({
-      where: { code: dto.code },
+      where: { code: dto.code, courseId: dto.courseId },
       include: {
         course: true,
       },
     });
 
-    if (!voucher) {
-      return {
-        message: 'Voucher not found',
-        data: {
-          isValid: false,
-          message: 'Voucher code is invalid',
-        },
-      };
-    }
+    if (!voucher) throw new NotFoundException('Voucher not found');
+    if (!voucher.course) throw new NotFoundException('Course not found');
 
-    // Check if voucher is active
-    if (voucher.status !== Status.active) {
-      return {
-        message: 'Voucher is not active',
-        data: {
-          isValid: false,
-          message: 'Voucher is not active',
-        },
-      };
-    }
+    if (voucher.status !== Status.active)
+      throw new BadRequestException('Voucher is not active');
 
-    // Check if voucher is expired
     const now = new Date();
-    if (now < voucher.startDate || now > voucher.endDate) {
-      return {
-        message: 'Voucher has expired or not yet started',
-        data: {
-          isValid: false,
-          message: 'Voucher has expired or not yet started',
-        },
-      };
-    }
+    if (now < voucher.startDate)
+      throw new BadRequestException('Voucher is not yet valid');
+    if (now > voucher.endDate)
+      throw new BadRequestException('Voucher has expired');
 
-    // Check if voucher is for specific course
-    if (voucher.courseId && voucher.courseId !== dto.courseId) {
-      return {
-        message: 'Voucher is not applicable for this course',
-        data: {
-          isValid: false,
-          message: 'Voucher is not applicable for this course',
-        },
-      };
-    }
-
-    // Check usage limit
-    if (voucher.usageLimit && voucher.usedCount >= voucher.usageLimit) {
-      return {
-        message: 'Voucher usage limit exceeded',
-        data: {
-          isValid: false,
-          message: 'Voucher usage limit exceeded',
-        },
-      };
-    }
-
-    // Get course price
-    const course = await this.prisma.course.findUnique({
-      where: { id: dto.courseId },
-    });
-
-    if (!course) {
-      throw new NotFoundException('Course not found');
-    }
+    if (voucher.usageLimit && voucher.usedCount >= voucher.usageLimit)
+      throw new BadRequestException('Voucher usage limit exceeded');
 
     // Calculate discount
+    const course = voucher.course;
     let finalPrice = course.price;
     if (voucher.discountType === DiscountType.percentage) {
       finalPrice = course.price * (1 - voucher.discountValue / 100);
