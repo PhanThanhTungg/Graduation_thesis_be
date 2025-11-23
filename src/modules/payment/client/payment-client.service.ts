@@ -117,8 +117,9 @@ export class PaymentClientService {
       cancelUrl: `${redirectBase}/payment/cancel`,
     });
 
-    const approvalUrl =
-      paypalOrder?.links?.find((link: any) => link.rel === 'approve')?.href;
+    const approvalUrl = paypalOrder?.links?.find(
+      (link: any) => link.rel === 'approve',
+    )?.href;
 
     if (!approvalUrl) {
       throw new BadRequestException('Unable to generate PayPal approval link');
@@ -168,6 +169,11 @@ export class PaymentClientService {
       where: { id: orderId },
       include: {
         voucher: true,
+        course: {
+          select: {
+            teacherId: true,
+          },
+        },
       },
     });
 
@@ -218,6 +224,14 @@ export class PaymentClientService {
           status: OrderStatus.success,
           completedAt: new Date(),
           paymentId: captureId,
+        },
+      });
+
+      await tx.wallet.update({
+        where: { userId: order.course.teacherId },
+        data: {
+          balance: { increment: order.finalPrice },
+          totalEarned: { increment: order.finalPrice },
         },
       });
 
@@ -323,7 +337,9 @@ export class PaymentClientService {
     }
 
     if (voucher.courseId && voucher.courseId !== courseId) {
-      throw new BadRequestException('Voucher is not applicable for this course');
+      throw new BadRequestException(
+        'Voucher is not applicable for this course',
+      );
     }
 
     if (voucher.usageLimit && voucher.usedCount >= voucher.usageLimit) {
@@ -351,4 +367,3 @@ export class PaymentClientService {
     }
   }
 }
-

@@ -1,12 +1,12 @@
 import {
   Injectable,
   ConflictException,
-  ForbiddenException
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import {
   UpdateClientProfileDto,
-  UpdateTeacherProfileDto
+  UpdateTeacherProfileDto,
 } from './dto/client-profile.dto';
 import { UserRole } from '../../../common/enums/common.enum';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
@@ -36,26 +36,46 @@ export class ClientProfileService {
       throw new ForbiddenException('Email has not been verified');
     }
 
-    const updatedUser = await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        ...updateDto,
-        ...(updateDto.email && (updateDto.email !== user.email) && { emailVerified: false }),
-      },
-      select:{
-        id: true,
-        fullName: true,
-        email: true,
-        role: true,
-        emailVerified: true,
-        avatarUrl: true,
-        status: true,
-        country: true,
+    const updatedUser = await this.prisma.$transaction(async (tx) => {
+      const userData = await tx.user.update({
+        where: { id: user.id },
+        data: {
+          ...updateDto,
+          ...(updateDto.email &&
+            updateDto.email !== user.email && { emailVerified: false }),
+        },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          role: true,
+          emailVerified: true,
+          avatarUrl: true,
+          status: true,
+          country: true,
+        },
+      });
+
+      if (updateDto.role === UserRole.teacher) {
+        const findWallet = await tx.wallet.findFirst({
+          where: {
+            userId: user.id,
+          },
+        });
+        if (!findWallet) {
+          await tx.wallet.create({
+            data: {
+              userId: user.id,
+            },
+          });
+        }
       }
+      return userData;
     });
+
     const response: successResponse = {
       message: 'Update profile successfully',
-      data: updatedUser
+      data: updatedUser,
     };
     return response;
   }
@@ -75,7 +95,7 @@ export class ClientProfileService {
 
     const response: successResponse = {
       message: 'Update teacher profile successfully',
-      data: updatedTeacherSetting
+      data: updatedTeacherSetting,
     };
     return response;
   }

@@ -17,6 +17,7 @@ import { VoucherClientModule } from './modules/voucher/client/voucher-client.mod
 import { ReviewClientModule } from './modules/review/client/review-client.module';
 import { PaymentClientModule } from './modules/payment/client/payment-client.module';
 import { NoteClientModule } from './modules/note/client/note-client.module';
+import { FinanceClientModule } from './modules/finance/client/finance-client.module';
 
 @Module({
   imports: [
@@ -38,8 +39,8 @@ import { NoteClientModule } from './modules/note/client/note-client.module';
     ReviewClientModule,
     PaymentClientModule,
     NoteClientModule,
+    FinanceClientModule,
   ],
-  providers: [
-  ],
+  providers: [],
 })
 export class AppModule {}
