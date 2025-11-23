@@ -258,7 +258,7 @@ export class ClientAuthService {
       token,
       user.fullName,
     );
-    
+
     if (!isSent) {
       throw new BadRequestException('Failed to send password reset email');
     }
@@ -305,6 +305,126 @@ export class ClientAuthService {
     return response;
   }
 
+  async googleLogin(googleUser: any) {
+    const { email, fullName, avatarUrl, googleId } = googleUser;
+    let user = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: email }, { googleId: googleId }],
+      },
+    });
+
+    if (user) {
+      // Update existing user with Google ID if not set
+      if (!user.googleId) {
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data: {
+            googleId: googleId,
+            avatarUrl: avatarUrl || user.avatarUrl,
+            emailVerified: true, // Auto verify email for Google users
+          },
+        });
+      }
+    } else {
+      // Create new user
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          fullName,
+          avatarUrl,
+          googleId,
+          emailVerified: true,
+          role: UserRole.student, // Default role
+          country: 'Unknown', // You can get this from Google API later
+          passwordHash: '', // No password hash needed for Google users
+        },
+      });
+    }
+
+    // Generate JWT tokens
+    const jwtPayload: JwtPayload = {
+      sub: user.id,
+      email: user.email,
+      type: 'client',
+      role: user.role,
+    };
+
+    const tokens = await this.jwtAuthService.generateTokenPair(jwtPayload);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        avatarUrl: user.avatarUrl,
+        role: user.role,
+        emailVerified: user.emailVerified,
+      },
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+    };
+  }
+
+  async facebookLogin(facebookUser: any) {
+    const { email, fullName, avatarUrl, facebookId } = facebookUser;
+    let user = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: email }, { facebookId: facebookId }],
+      },
+    });
+
+    if (user) {
+      // Update existing user with Facebook ID if not set
+      if (!user.facebookId) {
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data: {
+            facebookId: facebookId,
+            avatarUrl: avatarUrl || user.avatarUrl,
+            emailVerified: true, // Auto verify email for Facebook users
+          },
+        });
+      }
+    } else {
+      // Create new user
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          fullName,
+          avatarUrl,
+          facebookId,
+          emailVerified: true,
+          role: UserRole.student, // Default role
+          country: 'Unknown', // You can get this from Facebook API later
+          passwordHash: '', // No password hash needed for Facebook users
+        },
+      });
+    }
+
+    // Generate JWT tokens
+    const jwtPayload: JwtPayload = {
+      sub: user.id,
+      email: user.email,
+      type: 'client',
+      role: user.role,
+    };
+
+    const tokens = await this.jwtAuthService.generateTokenPair(jwtPayload);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        avatarUrl: user.avatarUrl,
+        role: user.role,
+        emailVerified: user.emailVerified,
+      },
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+    };
+  }
+
   private generateVerificationToken(): string {
     return randomBytes(32).toString('hex');
   }
@@ -316,6 +436,12 @@ export class ClientAuthService {
 
     if (!user) {
       throw new UnauthorizedException('Email not found');
+    }
+
+    if (!user.passwordHash) {
+      throw new UnauthorizedException(
+        'Please use social login for this account.',
+      );
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);

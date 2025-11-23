@@ -1,4 +1,11 @@
-import { IsEnum, IsNumber, IsString, Max, Min, IsOptional } from 'class-validator'
+import {
+  IsEnum,
+  IsNumber,
+  IsString,
+  Max,
+  Min,
+  IsOptional,
+} from 'class-validator';
 
 enum Environment {
   test = 'test',
@@ -8,76 +15,93 @@ enum Environment {
 
 export class EnvSchema {
   @IsEnum(Environment)
-  NODE_ENV: Environment
+  NODE_ENV: Environment;
 
   @IsString()
-  DATABASE_URL: string
+  DATABASE_URL: string;
 
   @IsString()
-  JWT_SECRET: string
+  JWT_SECRET: string;
 
   @IsString()
-  JWT_REFRESH_SECRET: string
+  JWT_REFRESH_SECRET: string;
 
   @IsNumber()
-  JWT_EXPIRES_IN: number
+  JWT_EXPIRES_IN: number;
 
   @IsNumber()
-  JWT_REFRESH_EXPIRES_IN: number
+  JWT_REFRESH_EXPIRES_IN: number;
 
   @IsString()
-  FRONTEND_CORS_ORIGIN: string
+  FRONTEND_CORS_ORIGIN: string;
 
   @IsOptional()
   @IsString()
-  LOG_LEVEL?: string = 'info'
+  LOG_LEVEL?: string = 'info';
 
   @IsOptional()
   @IsNumber()
   @Min(0)
   @Max(100)
-  LOG_SAMPLE_PCT?: number = 1
+  LOG_SAMPLE_PCT?: number = 1;
 
   @IsOptional()
   @IsNumber()
   @Min(0)
-  LOG_SLOW_MS?: number = 1000
+  LOG_SLOW_MS?: number = 1000;
 
   @IsOptional()
   @IsString()
-  LOG_FILE_PATH?: string
+  LOG_FILE_PATH?: string;
 
   @IsString()
-  EMAIL_HOST: string = 'smtp.gmail.com'
+  EMAIL_HOST: string = 'smtp.gmail.com';
 
   @IsNumber()
-  EMAIL_PORT: number = 587
+  EMAIL_PORT: number = 587;
 
   @IsString()
-  EMAIL_USER: string
+  EMAIL_USER: string;
 
   @IsString()
-  EMAIL_PASS: string
+  EMAIL_PASS: string;
 
   @IsString()
-  FRONTEND_URL: string
+  FRONTEND_URL: string;
 
   @IsOptional()
   @IsString()
-  APP_NAME?: string = 'Aikabis'
+  APP_NAME?: string = 'Aikabis';
 
   @IsString()
-  RECAPTCHA_SECRET_KEY: string
+  RECAPTCHA_SECRET_KEY: string;
 
   @IsString()
-  PAYPAL_CLIENTID: string
+  PAYPAL_CLIENTID: string;
 
   @IsString()
-  PAYPAL_SECRET: string
+  PAYPAL_SECRET: string;
 
   @IsString()
-  PAYPAL_BASEURL: string
+  PAYPAL_BASEURL: string;
 
   @IsString()
-  PAYPAL_REDIRECT_BASE_URL: string
+  PAYPAL_REDIRECT_BASE_URL: string;
+
+  // Google OAuth
+  @IsString()
+  GOOGLE_CLIENT_ID: string;
+
+  @IsString()
+  GOOGLE_CLIENT_SECRET: string;
+
+  @IsString()
+  BACKEND_URL: string;
+
+  // Facebook OAuth
+  @IsString()
+  FACEBOOK_CLIENT_ID: string;
+
+  @IsString()
+  FACEBOOK_CLIENT_SECRET: string;
 }
