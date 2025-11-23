@@ -1,7 +1,20 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { CourseDescriptionDto, CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
-import { ChapterTreeItemDto, CreateChapterDto, UpdateChapterDto } from './dto/chapter.dto';
+import {
+  CourseDescriptionDto,
+  CreateCourseDto,
+  UpdateCourseDto,
+} from './dto/course.dto';
+import {
+  ChapterTreeItemDto,
+  CreateChapterDto,
+  UpdateChapterDto,
+} from './dto/chapter.dto';
 import { GetCoursesDto } from './dto/get-courses.dto';
 import { generateUniqueSlug } from 'src/common/utils/slug.util';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
@@ -9,6 +22,7 @@ import { successResponse } from 'src/common/interfaces/response.interface';
 import { getSystemErrorMap } from 'util';
 import { fullObjectFilter } from 'src/common/interfaces/objectFilter.interface';
 import { CategoryService } from 'src/modules/category/category.service';
+import { OrderStatus } from '@prisma/client';
 
 @Injectable()
 export class CourseService {
@@ -27,7 +41,7 @@ export class CourseService {
       page = 1,
       limit = 10,
       sortBy = 'createdAt',
-      sortOrder = 'DESC'
+      sortOrder = 'DESC',
     } = dto;
 
     // Build where clause
@@ -40,9 +54,9 @@ export class CourseService {
     if (categoryIds) {
       const categoryIdArray = categoryIds
         .split(',')
-        .map(id => id.trim())
-        .filter(id => id !== '');
-      
+        .map((id) => id.trim())
+        .filter((id) => id !== '');
+
       if (categoryIdArray.length > 0) {
         where.categoryId = { in: categoryIdArray };
       }
@@ -52,12 +66,12 @@ export class CourseService {
     if (ratings) {
       const ratingArray = ratings
         .split(',')
-        .map(r => parseFloat(r.trim()))
-        .filter(r => !isNaN(r) && r >= 1 && r <= 5);
-      
+        .map((r) => parseFloat(r.trim()))
+        .filter((r) => !isNaN(r) && r >= 1 && r <= 5);
+
       if (ratingArray.length > 0) {
         // Build rating conditions for OR query
-        const ratingConditions = ratingArray.map(rating => {
+        const ratingConditions = ratingArray.map((rating) => {
           if (rating === 5) {
             return { rating: { gte: 5, lte: 5 } };
           }
@@ -66,10 +80,7 @@ export class CourseService {
 
         // If we already have OR conditions from search, merge them
         if (where.OR) {
-          where.AND = [
-            { OR: where.OR },
-            { OR: ratingConditions }
-          ];
+          where.AND = [{ OR: where.OR }, { OR: ratingConditions }];
           delete where.OR;
         } else {
           where.OR = ratingConditions;
@@ -90,19 +101,16 @@ export class CourseService {
     if (search) {
       const searchConditions = [
         { title: { contains: search, mode: 'insensitive' as const } },
-        { 
+        {
           courseDescription: {
-            detail: { contains: search, mode: 'insensitive' as const }
-          }
+            detail: { contains: search, mode: 'insensitive' as const },
+          },
         },
       ];
 
       if (where.OR && !where.AND) {
         // Already has OR from ratings
-        where.AND = [
-          { OR: where.OR },
-          { OR: searchConditions }
-        ];
+        where.AND = [{ OR: where.OR }, { OR: searchConditions }];
         delete where.OR;
       } else if (where.AND) {
         // Already has AND, just add search OR
@@ -126,16 +134,16 @@ export class CourseService {
       where,
       include: {
         teacher: {
-          select: { 
-            id: true, 
+          select: {
+            id: true,
             fullName: true,
           },
         },
-        category: { 
-          select: { 
-            id: true, 
-            title: true, 
-          } 
+        category: {
+          select: {
+            id: true,
+            title: true,
+          },
         },
       },
       orderBy,
@@ -155,15 +163,18 @@ export class CourseService {
           page,
           limit,
           totalPages,
-        }
-      }
+        },
+      },
     };
 
     return response;
   }
 
   async getCoursesByTeacherId(teacherId: string, filter: fullObjectFilter) {
-    const {courses, total, page, limit} = await this.getCourses(filter, teacherId);
+    const { courses, total, page, limit } = await this.getCourses(
+      filter,
+      teacherId,
+    );
     const response: successResponse = {
       message: 'Get all courses by teacher id successfully',
       data: {
@@ -180,7 +191,11 @@ export class CourseService {
   }
 
   async getMyCourses(teacherId: string, filter: fullObjectFilter) {
-    const {courses, total, page, limit} = await this.getCourses(filter, teacherId, true);
+    const { courses, total, page, limit } = await this.getCourses(
+      filter,
+      teacherId,
+      true,
+    );
     const response: successResponse = {
       message: 'Get my courses successfully',
       data: {
@@ -241,14 +256,23 @@ export class CourseService {
     return response;
   }
 
-  private async getCourses(filter: fullObjectFilter, teacherId?: string, isMyCourses?: boolean){
-    const {keySearch, sortField = 'createdAt',sortOrder = 'asc'} = filter;
+  private async getCourses(
+    filter: fullObjectFilter,
+    teacherId?: string,
+    isMyCourses?: boolean,
+  ) {
+    const { keySearch, sortField = 'createdAt', sortOrder = 'asc' } = filter;
     const isPublished = (filter as any).isPublished;
     const page = Number(filter.page) || 1;
     const limit = Number(filter.limit) || 10;
 
     let isPublishedFilter: boolean | undefined = undefined;
-    if (isMyCourses && isPublished !== undefined && isPublished !== null && isPublished !== '') {
+    if (
+      isMyCourses &&
+      isPublished !== undefined &&
+      isPublished !== null &&
+      isPublished !== ''
+    ) {
       const isPublishedStr = String(isPublished).toLowerCase();
       if (isPublishedStr === 'true' || isPublished === true) {
         isPublishedFilter = true;
@@ -290,7 +314,7 @@ export class CourseService {
       }),
     ]);
 
-    return {courses, total, page, limit};
+    return { courses, total, page, limit };
   }
 
   async getCourseBySlug(slug: string) {
@@ -302,7 +326,16 @@ export class CourseService {
       },
       include: {
         teacher: {
-          select: { id: true, fullName: true, email: true, avatarUrl: true, role: true, emailVerified: true, status: true, country: true },
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            avatarUrl: true,
+            role: true,
+            emailVerified: true,
+            status: true,
+            country: true,
+          },
         },
         courseDescription: true,
         category: { select: { id: true, title: true, slug: true } },
@@ -468,7 +501,8 @@ export class CourseService {
           ...(updateCourseDto.courseDescription.headline !== undefined && {
             headline: updateCourseDto.courseDescription.headline,
           }),
-          ...(updateCourseDto.courseDescription.targetKnowledges !== undefined && {
+          ...(updateCourseDto.courseDescription.targetKnowledges !==
+            undefined && {
             targetKnowledges:
               updateCourseDto.courseDescription.targetKnowledges.length > 0
                 ? updateCourseDto.courseDescription.targetKnowledges.join('&&&')
@@ -480,10 +514,13 @@ export class CourseService {
                 ? updateCourseDto.courseDescription.requirement.join('&&&')
                 : null,
           }),
-          ...(updateCourseDto.courseDescription.suitableParticipant !== undefined && {
+          ...(updateCourseDto.courseDescription.suitableParticipant !==
+            undefined && {
             suitableParticipant:
               updateCourseDto.courseDescription.suitableParticipant.length > 0
-                ? updateCourseDto.courseDescription.suitableParticipant.join('&&&')
+                ? updateCourseDto.courseDescription.suitableParticipant.join(
+                    '&&&',
+                  )
                 : null,
           }),
           ...(updateCourseDto.courseDescription.detail !== undefined && {
@@ -504,7 +541,9 @@ export class CourseService {
         ...(updateCourseDto.thumbnailUrl !== undefined && {
           thumbnailUrl: updateCourseDto.thumbnailUrl,
         }),
-        ...(updateCourseDto.price !== undefined && { price: updateCourseDto.price }),
+        ...(updateCourseDto.price !== undefined && {
+          price: updateCourseDto.price,
+        }),
         ...(updateCourseDto.categoryId !== undefined && {
           categoryId: updateCourseDto.categoryId,
         }),
@@ -560,7 +599,14 @@ export class CourseService {
     const chapters = await this.prisma.chapter.findMany({
       where: { courseId: course.id },
       orderBy: [{ parentId: 'asc' }, { position: 'asc' }],
-      select: { id: true, title: true, slug: true, description: true, position: true, parentId: true },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        position: true,
+        parentId: true,
+      },
     });
 
     const idToNode: Record<string, ChapterTreeItemDto> = {};
@@ -593,7 +639,11 @@ export class CourseService {
     return response;
   }
 
-  async createChapterBySlug(slug: string, dto: CreateChapterDto, teacherId: string) {
+  async createChapterBySlug(
+    slug: string,
+    dto: CreateChapterDto,
+    teacherId: string,
+  ) {
     const course = await this.prisma.course.findFirst({
       where: { slug, deletedAt: null, teacherId },
       select: { id: true },
@@ -623,7 +673,14 @@ export class CourseService {
         parentId: dto.parentId ?? null,
         position: nextPosition,
       },
-      select: { id: true, title: true, slug: true, description: true, position: true, parentId: true },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        position: true,
+        parentId: true,
+      },
     });
 
     const response: successResponse = {
@@ -643,7 +700,14 @@ export class CourseService {
     const chapters = await this.prisma.chapter.findMany({
       where: { courseId: course.id },
       orderBy: [{ parentId: 'asc' }, { position: 'asc' }],
-      select: { id: true, title: true, slug: true, description: true, position: true, parentId: true },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        position: true,
+        parentId: true,
+      },
     });
 
     const idToNode: Record<string, ChapterTreeItemDto> = {};
@@ -706,7 +770,14 @@ export class CourseService {
         parentId: dto.parentId ?? null,
         position: nextPosition,
       },
-      select: { id: true, title: true, slug: true, description: true, position: true, parentId: true },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        position: true,
+        parentId: true,
+      },
     });
 
     const response: successResponse = {
@@ -716,7 +787,12 @@ export class CourseService {
     return response;
   }
 
-  async updateChapter(courseId: string, chapterId: string, dto: UpdateChapterDto, teacherId: string) {
+  async updateChapter(
+    courseId: string,
+    chapterId: string,
+    dto: UpdateChapterDto,
+    teacherId: string,
+  ) {
     const course = await this.prisma.course.findFirst({
       where: { id: courseId, deletedAt: null, teacherId },
       select: { id: true, teacherId: true },
@@ -732,7 +808,9 @@ export class CourseService {
     }
 
     if (course.teacherId !== teacherId) {
-      throw new ForbiddenException('You do not have permission to update this chapter');
+      throw new ForbiddenException(
+        'You do not have permission to update this chapter',
+      );
     }
 
     const updateData: any = {};
@@ -747,7 +825,14 @@ export class CourseService {
     const updated = await this.prisma.chapter.update({
       where: { id: chapterId },
       data: updateData,
-      select: { id: true, title: true, slug: true, description: true, position: true, parentId: true },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        position: true,
+        parentId: true,
+      },
     });
 
     const response: successResponse = {
@@ -757,7 +842,11 @@ export class CourseService {
     return response;
   }
 
-  async deleteChapterBySlug(slug: string, chapterId: string, teacherId: string) {
+  async deleteChapterBySlug(
+    slug: string,
+    chapterId: string,
+    teacherId: string,
+  ) {
     const course = await this.prisma.course.findFirst({
       where: { slug, deletedAt: null, teacherId },
       select: { id: true },
@@ -778,7 +867,9 @@ export class CourseService {
     }
 
     if (chapter.course.teacherId !== teacherId) {
-      throw new ForbiddenException('You do not have permission to delete this chapter');
+      throw new ForbiddenException(
+        'You do not have permission to delete this chapter',
+      );
     }
 
     await this.prisma.chapter.delete({
@@ -807,7 +898,9 @@ export class CourseService {
     }
 
     if (course.teacherId !== teacherId) {
-      throw new ForbiddenException('You do not have permission to delete this chapter');
+      throw new ForbiddenException(
+        'You do not have permission to delete this chapter',
+      );
     }
 
     await this.prisma.chapter.delete({
@@ -843,6 +936,132 @@ export class CourseService {
 
     const response: successResponse = {
       message: 'Delete course successfully',
+    };
+    return response;
+  }
+
+  async getMyLearning(studentId: string, filter: fullObjectFilter) {
+    const page = Number(filter.page) || 1;
+    const limit = Number(filter.limit) || 10;
+    const keySearch = filter.keySearch;
+
+    const where: any = {
+      userId: studentId,
+      status: OrderStatus.success,
+      course: {
+        deletedAt: null,
+        ...(keySearch && {
+          title: { contains: keySearch, mode: 'insensitive' as const },
+        }),
+      },
+    };
+
+    const [total, orders] = await this.prisma.$transaction([
+      this.prisma.order.count({ where }),
+      this.prisma.order.findMany({
+        where,
+        include: {
+          course: {
+            include: {
+              teacher: {
+                select: { id: true, fullName: true },
+              },
+              courseDescription: true,
+              category: { select: { id: true, title: true, slug: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+    ]);
+
+    const courses = await Promise.all(
+      orders.map(async (order) => {
+        const course = order.course;
+        const courseDescription = course.courseDescription
+          ? {
+              headline: course.courseDescription.headline || null,
+              targetKnowledges:
+                course.courseDescription.targetKnowledges || null,
+              requirement: course.courseDescription.requirement || null,
+              suitableParticipant:
+                course.courseDescription.suitableParticipant || null,
+              detail: course.courseDescription.detail || null,
+            }
+          : null;
+
+        const totalLessons = await this.prisma.lesson.count({
+          where: {
+            chapter: {
+              courseId: course.id,
+            },
+          },
+        });
+
+        const completedLessons = await this.prisma.userLessonProgress.count({
+          where: {
+            userId: studentId,
+            progress: 'completed',
+            lesson: {
+              chapter: {
+                courseId: course.id,
+              },
+            },
+          },
+        });
+
+        const progressPercentage =
+          totalLessons > 0
+            ? Math.round((completedLessons / totalLessons) * 100)
+            : 0;
+
+        return {
+          id: course.id,
+          title: course.title,
+          thumbnailUrl: course.thumbnailUrl,
+          price: course.price,
+          originalPrice: course.price,
+          finalPrice: order.finalPrice,
+          discountAmount: order.discountAmount,
+          teacher: {
+            id: course.teacher.id,
+            fullName: course.teacher.fullName,
+          },
+          courseDescription,
+          category: {
+            id: course.category.id,
+            title: course.category.title,
+            slug: course.category.slug || null,
+          },
+          rating: course.rating,
+          slug: course.slug,
+          isPublished: course.isPublished,
+          createdAt: course.createdAt,
+          updatedAt: course.updatedAt,
+          countStudent: course.countStudent,
+          purchasedAt: order.completedAt || order.createdAt,
+          progress: {
+            completedLessons,
+            totalLessons,
+            percentage: progressPercentage,
+          },
+        };
+      }),
+    );
+
+    const response: successResponse = {
+      message: 'Get my learning courses successfully',
+      data: {
+        items: courses,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
     };
     return response;
   }
