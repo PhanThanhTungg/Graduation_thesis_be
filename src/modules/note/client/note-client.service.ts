@@ -1,12 +1,13 @@
-import { 
-  BadRequestException, 
-  Injectable, 
-  NotFoundException 
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { CreateNoteDto } from './dto/note.dto';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 import { successResponse } from 'src/common/interfaces/response.interface';
+import { NoteResponse } from 'src/common/interfaces/noteResponse.interface';
 
 @Injectable()
 export class NoteService {
@@ -79,7 +80,7 @@ export class NoteService {
    */
   async getUserNotesByLesson(user: currentClientUser, lessonId: string) {
     const notes = await this.prisma.note.findMany({
-      where: { 
+      where: {
         lessonId,
         userId: user.id,
       },
@@ -102,7 +103,7 @@ export class NoteService {
         where: { id: lessonId },
         select: { id: true },
       });
-      
+
       if (!lessonExists) {
         throw new NotFoundException('Lesson not found');
       }
@@ -111,26 +112,22 @@ export class NoteService {
     const response: successResponse = {
       message: 'Notes retrieved successfully',
       data: {
-        lesson: notes.length > 0 ? {
-          id: notes[0].lesson.id,
-          title: notes[0].lesson.title,
-        } : null,
+        lesson:
+          notes.length > 0
+            ? {
+                id: notes[0].lesson.id,
+                title: notes[0].lesson.title,
+              }
+            : null,
         notes: notes.map(({ lesson, ...note }) => note),
-        total: notes.length,
       },
     };
     return response;
   }
 
-  /**
-   * Get all notes of a user for a specific course
-   * Optimized: Single query to get notes with course info via relations
-   * @param user - Current authenticated user
-   * @param courseId - The course ID
-   */
   async getUserNotesByCourse(user: currentClientUser, courseId: string) {
     const notes = await this.prisma.note.findMany({
-      where: { 
+      where: {
         userId: user.id,
         lesson: {
           chapter: {
@@ -144,23 +141,8 @@ export class NoteService {
             id: true,
             title: true,
             slug: true,
-            chapter: {
-              select: {
-                course: {
-                  select: {
-                    id: true,
-                    title: true,
-                    slug: true,
-                    thumbnailUrl: true,
-                  },
-                },
-              },
-            },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
       },
     });
 
@@ -170,30 +152,29 @@ export class NoteService {
         where: { id: courseId },
         select: { id: true },
       });
-      
+
       if (!courseExists) {
         throw new NotFoundException('Course not found');
       }
     }
 
+    const lessonMap = new Map<string, NoteResponse>();
+    notes.forEach(({ lesson, lessonId, userId, ...note }) => {
+      if (!lessonMap.has(lesson.id)) {
+        lessonMap.set(lesson.id, {
+          lessonId: lesson.id,
+          lessonTitle: lesson.title,
+          lessonSlug: lesson.slug,
+          notes: [],
+        });
+      }
+      lessonMap.get(lesson.id)!.notes.push(note);
+    });
+
     const response: successResponse = {
-      message: 'User notes retrieved successfully',
+      message: 'Notes retrieved successfully',
       data: {
-        course: notes.length > 0 ? {
-          id: notes[0].lesson.chapter.course.id,
-          title: notes[0].lesson.chapter.course.title,
-          slug: notes[0].lesson.chapter.course.slug,
-          thumbnailUrl: notes[0].lesson.chapter.course.thumbnailUrl,
-        } : null,
-        notes: notes.map(({ lesson, ...note }) => ({
-          ...note,
-          lesson: {
-            id: lesson.id,
-            title: lesson.title,
-            slug: lesson.slug,
-          },
-        })),
-        total: notes.length,
+        lessons: Array.from(lessonMap.values()),
       },
     };
     return response;
@@ -209,7 +190,7 @@ export class NoteService {
   async updateNote(user: currentClientUser, noteId: string, dto: any) {
     try {
       const updatedNote = await this.prisma.note.update({
-        where: { 
+        where: {
           id: noteId,
           userId: user.id, // Ownership check in same query
         },
@@ -236,7 +217,9 @@ export class NoteService {
     } catch (error) {
       // Prisma P2025: Record not found (either note doesn't exist or user doesn't own it)
       if (error.code === 'P2025') {
-        throw new NotFoundException('Note not found or you do not have permission to update it');
+        throw new NotFoundException(
+          'Note not found or you do not have permission to update it',
+        );
       }
       throw new BadRequestException('Failed to update note');
     }
@@ -251,7 +234,7 @@ export class NoteService {
   async deleteNote(user: currentClientUser, noteId: string) {
     try {
       await this.prisma.note.delete({
-        where: { 
+        where: {
           id: noteId,
           userId: user.id, // Ownership check in same query
         },
@@ -265,7 +248,9 @@ export class NoteService {
     } catch (error) {
       // Prisma P2025: Record not found (either note doesn't exist or user doesn't own it)
       if (error.code === 'P2025') {
-        throw new NotFoundException('Note not found or you do not have permission to delete it');
+        throw new NotFoundException(
+          'Note not found or you do not have permission to delete it',
+        );
       }
       throw new BadRequestException('Failed to delete note');
     }

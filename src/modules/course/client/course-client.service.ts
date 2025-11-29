@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import {
   CourseDescriptionDto,
@@ -30,6 +31,86 @@ export class CourseService {
     private readonly prisma: PrismaService,
     private readonly categoryService: CategoryService,
   ) {}
+
+  async getUserWishList(userId: string) {
+    const wishlist = await this.prisma.wishList.findMany({
+      where: {
+        userId,
+        deletedAt: null,
+        course: {
+          deletedAt: null,
+          isPublished: true,
+        },
+      },
+      include: {
+        course: {
+          include: {
+            teacher: { select: { id: true, fullName: true } },
+            category: { select: { id: true, title: true, slug: true } },
+          },
+        },
+      },
+    });
+
+    const data = wishlist.map((item) => {
+      const course = item.course;
+      return {
+        ...course,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+      };
+    });
+
+    const response: successResponse = {
+      message: 'Get wishlist successfully',
+      data: { items: data },
+    };
+    return response;
+  }
+
+  async addToWishList(userId: string, courseId: string) {
+    try {
+      const upserted = await this.prisma.wishList.upsert({
+        where: { userId_courseId: { userId, courseId } },
+        update: { deletedAt: null },
+        create: { userId, courseId },
+      });
+
+      const response: successResponse = {
+        message: 'Add to wishlist successfully',
+      };
+      return response;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        // Foreign key constraint failed — course not found
+        if (error.code === 'P2003') {
+          throw new NotFoundException('Course not found');
+        }
+      }
+      throw error;
+    }
+  }
+
+  async removeFromWishList(userId: string, courseId: string) {
+    try {
+      const updated = await this.prisma.wishList.update({
+        where: { userId_courseId: { userId, courseId } },
+        data: { deletedAt: new Date() },
+      });
+
+      const response: successResponse = {
+        message: 'Remove from wishlist successfully',
+      };
+      return response;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          throw new NotFoundException('Wishlist item not found');
+        }
+      }
+      throw error;
+    }
+  }
 
   async getAllCoursesWithFilters(dto: GetCoursesDto) {
     const {
