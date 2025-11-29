@@ -1,4 +1,12 @@
-import { Controller, Post, Body, UseGuards, Req, Res } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Req,
+  Res,
+  Get,
+} from '@nestjs/common';
 import { Request, Response } from 'express';
 import { ClientAuthService } from './client-auth.service';
 import {
@@ -15,6 +23,9 @@ import { LoggingService } from 'src/shared/logging/logging.service';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 import { successResponse } from 'src/common/interfaces/response.interface';
+import { GoogleAuthGuard } from 'src/common/guards/google-auth.guard';
+import { EnvService } from 'src/shared/env/env.service';
+import { FacebookAuthGuard } from 'src/common/guards/facebook-auth.guard';
 
 @Controller(`/auth`)
 @ApiTags('Client Authentication')
@@ -22,6 +33,7 @@ export class ClientAuthController {
   constructor(
     private readonly clientAuthService: ClientAuthService,
     private readonly loggingService: LoggingService,
+    private readonly envService: EnvService,
   ) {}
 
   @Post('register')
@@ -116,5 +128,58 @@ export class ClientAuthController {
       resetPasswordDto.token,
       resetPasswordDto.newPassword,
     );
+  }
+
+  @Get('google')
+  @ApiOperation({ summary: 'Initiate Google OAuth login' })
+  @UseGuards(GoogleAuthGuard)
+  async googleAuth(@Req() req: Request) {
+    // This will redirect to Google
+  }
+
+  @Get('google/callback')
+  @ApiOperation({ summary: 'Google OAuth callback' })
+  @UseGuards(GoogleAuthGuard)
+  async googleAuthCallback(@Req() req: any, @Res() res: Response) {
+    try {
+      const result = await this.clientAuthService.googleLogin(req.user);
+
+      setCookieHttpOnly(res, 'client_refresh_token', result.refreshToken);
+
+      const frontendUrl = this.envService.get('FRONTEND_URL');
+      const redirectUrl = `${frontendUrl}/oauth/callback?token=${result.accessToken}`;
+
+      res.redirect(redirectUrl);
+    } catch (error) {
+      const frontendUrl = this.envService.get('FRONTEND_URL');
+      res.redirect(
+        `${frontendUrl}/oauth/callback?error=${encodeURIComponent(error.message)}`,
+      );
+    }
+  }
+
+  @Get('facebook')
+  @ApiOperation({ summary: 'Initiate Facebook OAuth login' })
+  @UseGuards(FacebookAuthGuard)
+  async facebookAuth(@Req() req: Request) {
+    // This will redirect to Facebook
+  }
+
+  @Get('facebook/callback')
+  @ApiOperation({ summary: 'Facebook OAuth callback' })
+  @UseGuards(FacebookAuthGuard)
+  async facebookAuthCallback(@Req() req: any, @Res() res: Response) {
+    try {
+      const result = await this.clientAuthService.facebookLogin(req.user);
+      setCookieHttpOnly(res, 'client_refresh_token', result.refreshToken);
+      const frontendUrl = this.envService.get('FRONTEND_URL');
+      const redirectUrl = `${frontendUrl}/oauth/callback?token=${result.accessToken}`;
+      res.redirect(redirectUrl);
+    } catch (error) {
+      const frontendUrl = this.envService.get('FRONTEND_URL');
+      res.redirect(
+        `${frontendUrl}/oauth/callback?error=${encodeURIComponent(error.message)}`,
+      );
+    }
   }
 }

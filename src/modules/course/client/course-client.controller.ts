@@ -1,6 +1,20 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { CourseService } from './course-client.service';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { UniversalAuthGuard } from 'src/common/guards/universal-auth.guard';
 import { UserRole } from 'src/common/enums/common.enum';
 import {
@@ -24,10 +38,25 @@ import { fullObjectFilter } from 'src/common/interfaces/objectFilter.interface';
 export class CourseController {
   constructor(private readonly courseService: CourseService) {}
 
+  // route for student
+  @Get('/student-area/my-learning')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.student)
+  @ApiOperation({ summary: 'Get my purchased courses' })
+  @ApiQuery({ name: 'page', type: Number, required: false })
+  @ApiQuery({ name: 'limit', type: Number, required: false })
+  @ApiQuery({ name: 'keySearch', type: String, required: false })
+  async getMyLearning(
+    @CurrentUser() user: currentClientUser,
+    @Query() filter: fullObjectFilter,
+  ) {
+    return this.courseService.getMyLearning(user.id, filter);
+  }
+
   // route for all
   @Get()
   @Public()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get all courses with advanced filters',
     description: `
       Get all published courses with filtering, pagination, sorting, and search:
@@ -43,17 +72,65 @@ export class CourseController {
       - /course?priceFrom=0&priceTo=100
       - /course?categoryIds=uuid1&ratings=4,5&priceFrom=50&priceTo=200
       - /course?search=web development&sortBy=rating&sortOrder=DESC
-    `
+    `,
   })
-  @ApiQuery({ name: 'categoryIds', required: false, description: 'Filter by category IDs (comma-separated)', example: 'uuid1,uuid2' })
-  @ApiQuery({ name: 'ratings', required: false, description: 'Filter by ratings (comma-separated)', example: '4,5' })
-  @ApiQuery({ name: 'priceFrom', required: false, description: 'Minimum price', example: 0, type: Number })
-  @ApiQuery({ name: 'priceTo', required: false, description: 'Maximum price', example: 1000, type: Number })
-  @ApiQuery({ name: 'search', required: false, description: 'Search by course name or description' })
-  @ApiQuery({ name: 'page', required: false, description: 'Page number', example: 1, type: Number })
-  @ApiQuery({ name: 'limit', required: false, description: 'Items per page', example: 10, type: Number })
-  @ApiQuery({ name: 'sortBy', required: false, enum: ['createdAt', 'price', 'rating', 'title'], example: 'createdAt' })
-  @ApiQuery({ name: 'sortOrder', required: false, enum: ['ASC', 'DESC'], example: 'DESC' })
+  @ApiQuery({
+    name: 'categoryIds',
+    required: false,
+    description: 'Filter by category IDs (comma-separated)',
+    example: 'uuid1,uuid2',
+  })
+  @ApiQuery({
+    name: 'ratings',
+    required: false,
+    description: 'Filter by ratings (comma-separated)',
+    example: '4,5',
+  })
+  @ApiQuery({
+    name: 'priceFrom',
+    required: false,
+    description: 'Minimum price',
+    example: 0,
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'priceTo',
+    required: false,
+    description: 'Maximum price',
+    example: 1000,
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search by course name or description',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number',
+    example: 1,
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Items per page',
+    example: 10,
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    enum: ['createdAt', 'price', 'rating', 'title'],
+    example: 'createdAt',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['ASC', 'DESC'],
+    example: 'DESC',
+  })
   async getAllCourses(@Query() dto: GetCoursesDto) {
     return this.courseService.getAllCoursesWithFilters(dto);
   }
@@ -94,12 +171,20 @@ export class CourseController {
   @ApiQuery({ name: 'sortOrder', type: String, required: false })
   @ApiQuery({ name: 'page', type: Number, required: false })
   @ApiQuery({ name: 'limit', type: Number, required: false })
-  @ApiQuery({ name: 'isPublished', type: String, required: false, description: 'Filter by published status: "true" for published, "false" for unpublished' })
+  @ApiQuery({
+    name: 'isPublished',
+    type: String,
+    required: false,
+    description:
+      'Filter by published status: "true" for published, "false" for unpublished',
+  })
   @ClientRoles(UserRole.teacher)
-  async getMyCourses(@CurrentUser() user: currentClientUser, @Query() filter: fullObjectFilter) {
+  async getMyCourses(
+    @CurrentUser() user: currentClientUser,
+    @Query() filter: fullObjectFilter,
+  ) {
     return this.courseService.getMyCourses(user.id, filter);
   }
-
 
   @Post('/teacher-area')
   @ApiBearerAuth()
@@ -170,7 +255,11 @@ export class CourseController {
     @Body() createChapterDto: CreateChapterDto,
     @CurrentUser() user: currentClientUser,
   ) {
-    return this.courseService.createChapterBySlug(slug, createChapterDto, user.id);
+    return this.courseService.createChapterBySlug(
+      slug,
+      createChapterDto,
+      user.id,
+    );
   }
 
   @Get('/teacher-area/:id/chapters')
@@ -199,7 +288,9 @@ export class CourseController {
   @Patch('/teacher-area/:id/chapters/:chapterId')
   @ApiBearerAuth()
   @ClientRoles(UserRole.teacher)
-  @ApiOperation({ summary: 'Update chapter by course id and chapter id (teacher area)' })
+  @ApiOperation({
+    summary: 'Update chapter by course id and chapter id (teacher area)',
+  })
   @ApiParam({ name: 'id', type: String, required: true })
   @ApiParam({ name: 'chapterId', type: String, required: true })
   async updateChapter(
@@ -208,13 +299,20 @@ export class CourseController {
     @Body() updateChapterDto: UpdateChapterDto,
     @CurrentUser() user: currentClientUser,
   ) {
-    return this.courseService.updateChapter(id, chapterId, updateChapterDto, user.id);
+    return this.courseService.updateChapter(
+      id,
+      chapterId,
+      updateChapterDto,
+      user.id,
+    );
   }
 
   @Delete('/teacher-area/slug/:slug/chapters/:chapterId')
   @ApiBearerAuth()
   @ClientRoles(UserRole.teacher)
-  @ApiOperation({ summary: 'Delete chapter by slug and chapter id (teacher area)' })
+  @ApiOperation({
+    summary: 'Delete chapter by slug and chapter id (teacher area)',
+  })
   @ApiParam({ name: 'slug', type: String, required: true })
   @ApiParam({ name: 'chapterId', type: String, required: true })
   async deleteChapterBySlug(
@@ -228,7 +326,9 @@ export class CourseController {
   @Delete('/teacher-area/:id/chapters/:chapterId')
   @ApiBearerAuth()
   @ClientRoles(UserRole.teacher)
-  @ApiOperation({ summary: 'Delete chapter by course id and chapter id (teacher area)' })
+  @ApiOperation({
+    summary: 'Delete chapter by course id and chapter id (teacher area)',
+  })
   @ApiParam({ name: 'id', type: String, required: true })
   @ApiParam({ name: 'chapterId', type: String, required: true })
   async deleteChapter(
@@ -250,5 +350,4 @@ export class CourseController {
   ) {
     return this.courseService.deleteCourse(id, user.id);
   }
-
 }
