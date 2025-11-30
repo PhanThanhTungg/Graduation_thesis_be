@@ -41,7 +41,6 @@ export class CourseController {
   // route for student
   @Get('/student-area/my-learning')
   @ApiBearerAuth()
-  @ClientRoles(UserRole.student)
   @ApiOperation({ summary: 'Get my purchased courses' })
   @ApiQuery({ name: 'page', type: Number, required: false })
   @ApiQuery({ name: 'limit', type: Number, required: false })
@@ -58,78 +57,48 @@ export class CourseController {
   @Public()
   @ApiOperation({
     summary: 'Get all courses with advanced filters',
-    description: `
-      Get all published courses with filtering, pagination, sorting, and search:
-      - Filter by multiple categories (comma-separated IDs)
-      - Filter by multiple ratings (comma-separated values 1-5)
-      - Filter by price range (from-to)
-      - Search by course name or description
-      - Pagination and sorting support
-      
-      Examples:
-      - /course?categoryIds=uuid1,uuid2
-      - /course?ratings=4,5
-      - /course?priceFrom=0&priceTo=100
-      - /course?categoryIds=uuid1&ratings=4,5&priceFrom=50&priceTo=200
-      - /course?search=web development&sortBy=rating&sortOrder=DESC
-    `,
   })
   @ApiQuery({
     name: 'categoryIds',
     required: false,
-    description: 'Filter by category IDs (comma-separated)',
-    example: 'uuid1,uuid2',
   })
   @ApiQuery({
     name: 'ratings',
     required: false,
-    description: 'Filter by ratings (comma-separated)',
-    example: '4,5',
   })
   @ApiQuery({
     name: 'priceFrom',
     required: false,
-    description: 'Minimum price',
-    example: 0,
     type: Number,
   })
   @ApiQuery({
     name: 'priceTo',
     required: false,
-    description: 'Maximum price',
-    example: 1000,
     type: Number,
   })
   @ApiQuery({
     name: 'search',
     required: false,
-    description: 'Search by course name or description',
   })
   @ApiQuery({
     name: 'page',
     required: false,
-    description: 'Page number',
-    example: 1,
     type: Number,
   })
   @ApiQuery({
     name: 'limit',
     required: false,
-    description: 'Items per page',
-    example: 10,
     type: Number,
   })
   @ApiQuery({
     name: 'sortBy',
     required: false,
     enum: ['createdAt', 'price', 'rating', 'title'],
-    example: 'createdAt',
   })
   @ApiQuery({
     name: 'sortOrder',
     required: false,
     enum: ['ASC', 'DESC'],
-    example: 'DESC',
   })
   async getAllCourses(@Query() dto: GetCoursesDto) {
     return this.courseService.getAllCoursesWithFilters(dto);
@@ -218,6 +187,32 @@ export class CourseController {
     @CurrentUser() user: currentClientUser,
   ) {
     return this.courseService.getCourseById(id, user.id);
+  }
+
+  @Get('student-area/wish-list')
+  @ApiOperation({ summary: "Get current user's wishlist" })
+  async getMyWishList(@CurrentUser() user: currentClientUser) {
+    return this.courseService.getUserWishList(user.id);
+  }
+
+  @Post('student-area/wish-list/:courseId')
+  @ApiOperation({ summary: 'Add course to wishlist' })
+  @ApiParam({ name: 'courseId', type: String })
+  async addToWishList(
+    @Param('courseId') courseId: string,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.courseService.addToWishList(user.id, courseId);
+  }
+
+  @Delete('student-area/wish-list/:courseId')
+  @ApiOperation({ summary: 'Remove course from wishlist' })
+  @ApiParam({ name: 'courseId', type: String })
+  async removeFromWishList(
+    @Param('courseId') courseId: string,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.courseService.removeFromWishList(user.id, courseId);
   }
 
   @Patch('/teacher-area/:id')
