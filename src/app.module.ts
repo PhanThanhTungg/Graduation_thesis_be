@@ -18,6 +18,7 @@ import { ReviewClientModule } from './modules/review/client/review-client.module
 import { PaymentClientModule } from './modules/payment/client/payment-client.module';
 import { NoteClientModule } from './modules/note/client/note-client.module';
 import { FinanceClientModule } from './modules/finance/client/finance-client.module';
+import { QuestionClientModule } from './modules/question/client/question-client.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { FinanceClientModule } from './modules/finance/client/finance-client.mod
     PaymentClientModule,
     NoteClientModule,
     FinanceClientModule,
+    QuestionClientModule,
   ],
   providers: [],
 })
