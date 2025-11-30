@@ -115,6 +115,7 @@ model User {
   wallet                Wallet?
   orders                Order[]                 @relation("StudentOrders")
   notes                    Note[]                  @relation("UserNotes")
+  wishLists                WishList[]              @relation("UserWishList")
 
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime?       @updatedAt @map("updated_at")
@@ -177,6 +178,7 @@ model Course {
   reviews             Review[]          @relation("CourseReviews")
 
   orders                Order[]                 @relation("CourseOrders")
+  wishLists             WishList[]              @relation("CourseWishLists")
 
   createdAt           DateTime          @default(now()) @map("created_at")
   updatedAt           DateTime?         @updatedAt @map("updated_at")
@@ -580,4 +582,20 @@ model Note {
   createdAt DateTime  @default(now()) @map("created_at")
 
   @@map("note")
+}
+
+model WishList {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  courseId  String   @map("course_id")
+  
+  user      User     @relation("UserWishList", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  course    Course   @relation("CourseWishLists", fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+  deletedAt DateTime?    @map("deleted_at")
+
+  @@unique([userId, courseId])
+  @@map("wish_list")
 }
