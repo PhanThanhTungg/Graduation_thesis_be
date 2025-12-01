@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsOptional, IsString, MaxLength, ValidateNested, IsArray, IsBoolean, IsEnum } from 'class-validator';
+import {
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+  ValidateNested,
+  IsArray,
+  IsBoolean,
+  IsEnum,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { LessonProgress } from '@prisma/client';
 
@@ -15,6 +24,20 @@ export class FileDto {
   @ApiProperty({ description: 'File size in bytes' })
   @IsNumber()
   fileSize: number;
+
+  @ApiPropertyOptional({
+    description: 'Whether this file is used for AI question generation',
+  })
+  @IsOptional()
+  @IsBoolean()
+  isForAiQues?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Whether this file is used for AI quiz generation',
+  })
+  @IsOptional()
+  @IsBoolean()
+  isForAiQuiz?: boolean;
 }
 
 export class CreateLessonDto {
@@ -50,10 +73,39 @@ export class CreateLessonDto {
   @Type(() => FileDto)
   files?: FileDto[];
 
-  @ApiPropertyOptional({ description: 'Allow preview for non-enrolled students', default: false })
+  @ApiPropertyOptional({
+    description: 'Allow preview for non-enrolled students',
+    default: false,
+  })
   @IsOptional()
   @IsBoolean()
   isFree?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Enable AI question generation',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isGenQues?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Enable AI quiz generation',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isGenQuiz?: boolean;
+
+  @ApiPropertyOptional({ description: 'Prompt for AI question generation' })
+  @IsOptional()
+  @IsString()
+  promptForGenQues?: string;
+
+  @ApiPropertyOptional({ description: 'Prompt for AI quiz generation' })
+  @IsOptional()
+  @IsString()
+  promptForGenQuiz?: string;
 }
 
 export class UpdateLessonDto {
@@ -89,10 +141,39 @@ export class UpdateLessonDto {
   @Type(() => FileDto)
   files?: FileDto[];
 
-  @ApiPropertyOptional({ description: 'Allow preview for non-enrolled students', default: false })
+  @ApiPropertyOptional({
+    description: 'Allow preview for non-enrolled students',
+    default: false,
+  })
   @IsOptional()
   @IsBoolean()
   isFree?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Enable AI question generation',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isGenQues?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Enable AI quiz generation',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isGenQuiz?: boolean;
+
+  @ApiPropertyOptional({ description: 'Prompt for AI question generation' })
+  @IsOptional()
+  @IsString()
+  promptForGenQues?: string;
+
+  @ApiPropertyOptional({ description: 'Prompt for AI quiz generation' })
+  @IsOptional()
+  @IsString()
+  promptForGenQuiz?: string;
 }
 
 export class UpdateLessonProgressDto {
@@ -188,4 +269,3 @@ export class ChapterWithLessonsTreeItemDto {
   @ApiProperty({ type: () => [ChapterWithLessonsTreeItemDto] })
   children: ChapterWithLessonsTreeItemDto[] = [];
 }
-

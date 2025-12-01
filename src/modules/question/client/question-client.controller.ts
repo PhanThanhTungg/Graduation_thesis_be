@@ -20,7 +20,7 @@ export class QuestionController {
   // I) ROUTES FOR STUDENT
 
   // 1.1) routes for generating questions
-  @Post('/generate-questions')
+  @Post('/generate-questions/:lessonSlug')
   @ApiBearerAuth()
   @ClientRoles(UserRole.student)
   @ApiOperation({ summary: 'Generate questions for a lesson' })

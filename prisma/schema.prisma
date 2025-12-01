@@ -228,6 +228,12 @@ model Lesson {
   isFree      Boolean    @default(false) @map("is_free")
   viewCount   Int        @default(0) @map("view_count")
 
+  isGenQues Boolean @default(false) @map("is_gen_ques")
+  isGenQuiz Boolean @default(false) @map("is_gen_quiz")
+
+  promptForGenQues String? @map("prompt_for_gen_ques")
+  promptForGenQuiz String? @map("prompt_for_gen_quiz")
+
   chapter     Chapter    @relation(fields: [chapterId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   videoLesson VideoLesson?
   files       File[]
@@ -272,6 +278,9 @@ model File {
   fileUrl   String  @map("file_url")
   fileName  String  @map("file_name")
   fileSize  Int     @map("file_size")
+
+  isForAiQues   Boolean @default(false) @map("is_for_ai")
+  isForAiQuiz   Boolean @default(false) @map("is_for_ai_quiz")
   
   lesson    Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
