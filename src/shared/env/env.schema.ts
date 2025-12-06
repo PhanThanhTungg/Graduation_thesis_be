@@ -102,4 +102,12 @@ export class EnvSchema {
   GEMINI_TEMPERATURE: number;
   @IsNumber()
   GEMINI_MAX_TOKEN: number;
+
+  // Groq API
+  @IsString()
+  GROQ_API_KEY: string;
+  @IsNumber()
+  GROQ_TEMPERATURE: number;
+  @IsNumber()
+  GROQ_MAX_TOKEN: number;
 }

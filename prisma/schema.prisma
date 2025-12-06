@@ -40,6 +40,22 @@ enum DiscountType {
   fixed_amount
 }
 
+enum TypeQuestion {
+  single_choice  
+  multiple_choice
+  fill_in_the_blank
+  short_answer
+  true_false
+}
+
+enum Difficulty {
+  very_easy
+  easy
+  medium
+  hard
+  very_hard
+}
+
 model Admin {
   id           String    @id @default(uuid())
   fullName     String    @map("full_name") @db.VarChar(100)
@@ -238,6 +254,7 @@ model Lesson {
   videoLesson VideoLesson?
   files       File[]
   userProgress UserLessonProgress[]
+  questions   Question[]
   notes       Note[]     @relation("LessonNotes")
   slug        String    @unique
   createdAt   DateTime   @default(now()) @map("created_at")
@@ -279,7 +296,7 @@ model File {
   fileName  String  @map("file_name")
   fileSize  Int     @map("file_size")
 
-  isForAiQues   Boolean @default(false) @map("is_for_ai")
+  isForAiQues   Boolean @default(false) @map("is_for_ai_ques")
   isForAiQuiz   Boolean @default(false) @map("is_for_ai_quiz")
   
   lesson    Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -288,6 +305,25 @@ model File {
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("file")
+}
+
+model Question {
+  id          String     @id @default(uuid())
+  statement   String
+  answer      String?
+  score       Int?
+  explain     String?
+  aiFeedback  String?
+  type        TypeQuestion
+  difficulty  Difficulty @default(medium)
+
+  lessonId    String  @map("lesson_id")
+  lesson      Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("questions")
 }
 
 model EmailVerificationToken {

@@ -1,4 +1,4 @@
-import { Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiParam, ApiOperation } from '@nestjs/swagger';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import {
@@ -10,6 +10,7 @@ import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 import { QuestionService } from './question-client.service';
 import { ApiTags } from '@nestjs/swagger';
 import { UniversalAuthGuard } from 'src/common/guards/universal-auth.guard';
+import { GenerateQuestionsDto } from './dto/generate.dto';
 
 @Controller('question')
 @ApiTags('Client / Question')
@@ -26,9 +27,10 @@ export class QuestionController {
   @ApiOperation({ summary: 'Generate questions for a lesson' })
   @ApiParam({ name: 'lessonSlug', type: String, required: true })
   async generateQuestions(
+    @Body() dto: GenerateQuestionsDto,
     @Param('lessonSlug') lessonSlug: string,
     @CurrentUser() user: currentClientUser,
   ) {
-    return this.questionService.generateQuestions(lessonSlug, user.id);
+    return this.questionService.generateQuestions(lessonSlug, dto, user.id);
   }
 }
