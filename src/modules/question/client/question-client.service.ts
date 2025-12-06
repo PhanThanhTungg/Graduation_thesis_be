@@ -75,30 +75,53 @@ export class QuestionService {
       dto,
     );
     let questions, dataRes;
-    if (dto.model === Model.GROQ) {
-      questions = await this.groqService.generateContent({
-        prompt,
-        // files: files.length > 0 ? files : undefined,
-      });
-      dataRes = JSON.parse(
-        questions.text
-          .replace(/```json/g, '')
-          .replace(/```/g, '')
-          .trim(),
-      );
-    } else {
-      questions = await this.geminiService.generateContent({
-        prompt,
-        files: files.length > 0 ? files : undefined,
-      });
-      dataRes = JSON.parse(
-        questions.text.replace('```json', '').replace('```', ''),
-      );
+
+    switch (dto.model) {
+      case Model.GROQ:
+        questions = await this.groqService.generateContent({
+          prompt,
+          // files: files.length > 0 ? files : undefined,
+        });
+        dataRes = JSON.parse(
+          questions.text
+            .replace(/```json/g, '')
+            .replace(/```/g, '')
+            .trim(),
+        );
+        break;
+      case Model.GEMINI:
+        questions = await this.geminiService.generateContent({
+          prompt,
+          files: files.length > 0 ? files : undefined,
+        });
+        dataRes = JSON.parse(
+          questions.text
+            .replace(/```json/g, '')
+            .replace(/```/g, '')
+            .trim(),
+        );
+        break;
+      default:
+        throw new BadRequestException('Invalid model');
     }
+    const questionArr: any[] = [];
+    questionArr.push(...(Array.isArray(dataRes) ? dataRes : [dataRes]));
+    const newQuestions = await Promise.all(
+      questionArr.map((question) =>
+        this.prisma.question.create({
+          data: {
+            statement: JSON.stringify(question),
+            type: dto.typeQuestion,
+            difficulty: dto.difficulty,
+            lessonId: lesson.id,
+          },
+        }),
+      ),
+    );
 
     const response: successResponse = {
       message: 'Create questions successfully',
-      data: dataRes,
+      data: newQuestions,
     };
     return response;
   }
