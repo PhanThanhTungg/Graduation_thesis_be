@@ -171,4 +171,38 @@ export class QuestionService {
       throw new BadRequestException('You are not the owner of this question');
     return question;
   }
+
+  async getQuestionHistory(lessonSlug: string, userId: string) {
+    const lesson = await this.prisma.lesson.findFirst({
+      where: { slug: lessonSlug },
+    });
+    if (!lesson) throw new NotFoundException('Lesson not found');
+
+    const questions = await this.prisma.question.findMany({
+      where: {
+        lessonId: lesson.id,
+        userId,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: {
+        id: true,
+        statement: true,
+        type: true,
+        difficulty: true,
+        answer: true,
+        score: true,
+        explain: true,
+        aiFeedback: true,
+        createdAt: true,
+      },
+    });
+
+    const response: successResponse = {
+      message: 'Get question history successfully',
+      data: questions,
+    };
+    return response;
+  }
 }

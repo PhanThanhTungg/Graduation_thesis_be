@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiParam, ApiOperation } from '@nestjs/swagger';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import {
@@ -45,5 +45,17 @@ export class QuestionController {
     @CurrentUser() user: currentClientUser,
   ) {
     return this.questionService.answerQuestion(questionId, dto, user.id);
+  }
+
+  @Get('/history/:lessonSlug')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.student)
+  @ApiOperation({ summary: 'Get question history for a lesson' })
+  @ApiParam({ name: 'lessonSlug', type: String, required: true })
+  async getQuestionHistory(
+    @Param('lessonSlug') lessonSlug: string,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.questionService.getQuestionHistory(lessonSlug, user.id);
   }
 }
