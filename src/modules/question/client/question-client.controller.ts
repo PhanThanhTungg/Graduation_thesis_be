@@ -11,6 +11,7 @@ import { QuestionService } from './question-client.service';
 import { ApiTags } from '@nestjs/swagger';
 import { UniversalAuthGuard } from 'src/common/guards/universal-auth.guard';
 import { GenerateQuestionsDto } from './dto/generate.dto';
+import { AnswerQuestionDto } from './dto/answer-question.dto';
 
 @Controller('question')
 @ApiTags('Client / Question')
@@ -20,7 +21,6 @@ export class QuestionController {
   constructor(private readonly questionService: QuestionService) {}
   // I) ROUTES FOR STUDENT
 
-  // 1.1) routes for generating questions
   @Post('/generate-questions/:lessonSlug')
   @ApiBearerAuth()
   @ClientRoles(UserRole.student)
@@ -32,5 +32,18 @@ export class QuestionController {
     @CurrentUser() user: currentClientUser,
   ) {
     return this.questionService.generateQuestions(lessonSlug, dto, user.id);
+  }
+
+  @Post('/answer-question/:questionId')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.student)
+  @ApiOperation({ summary: 'Answer a question' })
+  @ApiParam({ name: 'questionId', type: String, required: true })
+  async answerQuestion(
+    @Body() dto: AnswerQuestionDto,
+    @Param('questionId') questionId: string,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.questionService.answerQuestion(questionId, dto, user.id);
   }
 }

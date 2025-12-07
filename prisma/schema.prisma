@@ -126,6 +126,7 @@ model User {
   vouchersCreated          Voucher[]               @relation("VoucherCreator")
   reviews                  Review[]                @relation("UserReviews")
   reviewReplies            ReviewReply[]           @relation("UserReviewReplies")
+  questions                Question[]              @relation("UserQuestions")
   platformTransactions     PlatformTransaction[]   @relation("UserPlatformTransactions")
 
   wallet                Wallet?
@@ -319,6 +320,9 @@ model Question {
 
   lessonId    String  @map("lesson_id")
   lesson      Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  userId      String  @map("user_id")
+  user        User    @relation("UserQuestions",fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -614,6 +618,7 @@ model PlatformTransaction {
 //   @@index([periodStart, periodEnd])
 //   @@map("financial_report")
 // }
+
 model Note {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
