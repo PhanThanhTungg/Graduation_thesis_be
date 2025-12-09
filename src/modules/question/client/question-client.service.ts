@@ -13,6 +13,7 @@ import { GroqService } from 'src/shared/AI/groq/groq.service';
 import fileUtils from 'src/common/utils/file.util';
 import { AnswerQuestionDto } from './dto/answer-question.dto';
 import { answerQuestionPrompt } from 'src/shared/AI/prompt/question/answer.prompt';
+import { QuestionHistoryQueryDto } from './dto/question-history-query.dto';
 
 @Injectable()
 export class QuestionService {
@@ -172,20 +173,55 @@ export class QuestionService {
     return question;
   }
 
-  async getQuestionHistory(lessonSlug: string, userId: string) {
+  async getQuestionHistory(
+    lessonSlug: string,
+    userId: string,
+    query: QuestionHistoryQueryDto,
+  ) {
     const lesson = await this.prisma.lesson.findFirst({
       where: { slug: lessonSlug },
     });
     if (!lesson) throw new NotFoundException('Lesson not found');
 
+    // Build where clause with filters
+    const where: any = {
+      lessonId: lesson.id,
+      userId,
+    };
+
+    if (query.type) {
+      where.type = query.type;
+    }
+
+    if (query.difficulty) {
+      where.difficulty = query.difficulty;
+    }
+
+    // Count total items
+    const totalItems = await this.prisma.question.count({ where });
+
+    // Calculate pagination
+    const page = query.page || 1;
+    const limit = query.limit || 10;
+    const skip = (page - 1) * limit;
+    const totalPages = Math.ceil(totalItems / limit);
+
+    // Build orderBy clause
+    const orderBy: any = {};
+    if (query.sortBy === 'date') {
+      orderBy.createdAt = query.sortOrder || 'desc';
+    } else if (query.sortBy === 'score') {
+      orderBy.score = query.sortOrder || 'desc';
+    } else {
+      orderBy.createdAt = 'desc';
+    }
+
+    // Fetch questions with pagination
     const questions = await this.prisma.question.findMany({
-      where: {
-        lessonId: lesson.id,
-        userId,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      where,
+      orderBy,
+      skip,
+      take: limit,
       select: {
         id: true,
         statement: true,
@@ -202,6 +238,12 @@ export class QuestionService {
     const response: successResponse = {
       message: 'Get question history successfully',
       data: questions,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems,
+        itemsPerPage: limit,
+      },
     };
     return response;
   }

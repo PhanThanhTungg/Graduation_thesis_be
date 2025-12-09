@@ -1,5 +1,18 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiParam, ApiOperation } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiParam,
+  ApiOperation,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import {
   ClientRoleGuard,
@@ -12,6 +25,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { UniversalAuthGuard } from 'src/common/guards/universal-auth.guard';
 import { GenerateQuestionsDto } from './dto/generate.dto';
 import { AnswerQuestionDto } from './dto/answer-question.dto';
+import { QuestionHistoryQueryDto } from './dto/question-history-query.dto';
 
 @Controller('question')
 @ApiTags('Client / Question')
@@ -50,12 +64,53 @@ export class QuestionController {
   @Get('/history/:lessonSlug')
   @ApiBearerAuth()
   @ClientRoles(UserRole.student)
-  @ApiOperation({ summary: 'Get question history for a lesson' })
+  @ApiOperation({
+    summary: 'Get question history for a lesson with pagination and filters',
+  })
   @ApiParam({ name: 'lessonSlug', type: String, required: true })
+  @ApiQuery({
+    name: 'page',
+    type: Number,
+    required: false,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    type: Number,
+    required: false,
+    description: 'Items per page (default: 10)',
+  })
+  @ApiQuery({
+    name: 'type',
+    type: String,
+    required: false,
+    description: 'Filter by question type',
+  })
+  @ApiQuery({
+    name: 'difficulty',
+    type: String,
+    required: false,
+    description: 'Filter by difficulty',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    type: String,
+    required: false,
+    enum: ['date', 'score'],
+    description: 'Sort by field',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    type: String,
+    required: false,
+    enum: ['asc', 'desc'],
+    description: 'Sort order',
+  })
   async getQuestionHistory(
     @Param('lessonSlug') lessonSlug: string,
+    @Query() query: QuestionHistoryQueryDto,
     @CurrentUser() user: currentClientUser,
   ) {
-    return this.questionService.getQuestionHistory(lessonSlug, user.id);
+    return this.questionService.getQuestionHistory(lessonSlug, user.id, query);
   }
 }
