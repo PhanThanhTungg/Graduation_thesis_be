@@ -113,4 +113,18 @@ export class QuestionController {
   ) {
     return this.questionService.getQuestionHistory(lessonSlug, user.id, query);
   }
+
+  @Get('/unanswered/:lessonSlug')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.student)
+  @ApiOperation({
+    summary: 'Get the first unanswered question for a lesson',
+  })
+  @ApiParam({ name: 'lessonSlug', type: String, required: true })
+  async getUnansweredQuestion(
+    @Param('lessonSlug') lessonSlug: string,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.questionService.getUnansweredQuestion(lessonSlug, user.id);
+  }
 }

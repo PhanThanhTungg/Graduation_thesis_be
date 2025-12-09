@@ -247,4 +247,31 @@ export class QuestionService {
     };
     return response;
   }
+
+  async getUnansweredQuestion(lessonSlug: string, userId: string) {
+    const lesson = await this.prisma.lesson.findFirst({
+      where: { slug: lessonSlug },
+    });
+    if (!lesson) throw new NotFoundException('Lesson not found');
+
+    // Find the first question without an answer for this user and lesson
+    const unansweredQuestion = await this.prisma.question.findFirst({
+      where: {
+        lessonId: lesson.id,
+        userId,
+        answer: null,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    const response: successResponse = {
+      message: unansweredQuestion
+        ? 'Unanswered question found'
+        : 'No unanswered questions',
+      data: unansweredQuestion,
+    };
+    return response;
+  }
 }
