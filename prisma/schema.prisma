@@ -56,6 +56,14 @@ enum Difficulty {
   very_hard
 }
 
+enum LessonReviewStatus {
+  new
+  learning
+  reviewing
+  lapsed
+  suspending
+}
+
 model Admin {
   id           String    @id @default(uuid())
   fullName     String    @map("full_name") @db.VarChar(100)
@@ -128,6 +136,7 @@ model User {
   reviewReplies            ReviewReply[]           @relation("UserReviewReplies")
   questions                Question[]              @relation("UserQuestions")
   platformTransactions     PlatformTransaction[]   @relation("UserPlatformTransactions")
+  lessonReviewSettings     LessonReviewSetting[]          
 
   wallet                Wallet?
   orders                Order[]                 @relation("StudentOrders")
@@ -257,11 +266,29 @@ model Lesson {
   userProgress UserLessonProgress[]
   questions   Question[]
   notes       Note[]     @relation("LessonNotes")
+  reviewSetting LessonReviewSetting?
   slug        String    @unique
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime?  @updatedAt @map("updated_at")
 
   @@map("lesson")
+}
+
+model LessonReviewSetting {
+  id            String  @id @default(uuid())
+  reviewEnabled Boolean @default(true) @map("review_enabled")
+  
+  easinessFactor Float @default(2.5) @map("easiness_factor") // Hệ số mô tả mức độ dễ
+  intervalDays Int @default(0) // Khoảng thời gian cho lần ôn tập tiếp theo
+  status LessonReviewStatus @default(new) @map("status")
+  reviewStep Int @default(1) @map("review_step") // Bước ôn tập hiện tại
+  lapsed Int @default(0) // Số lần ther bij trả lời sai khi đang ở reviewing
+  
+  userId      String  @map("user_id")
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  lessonId      String  @unique @map("lesson_id")
+  lesson        Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model UserLessonProgress {

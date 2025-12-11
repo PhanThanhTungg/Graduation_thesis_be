@@ -709,4 +709,10 @@ export class LessonService {
       return response;
     }
   }
+
+  async getLessonById(lessonId: string) {
+    return await this.prisma.lesson.findUnique({
+      where: { id: lessonId },
+    });
+  }
 }

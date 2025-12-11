@@ -20,6 +20,7 @@ import { NoteClientModule } from './modules/note/client/note-client.module';
 import { StudentModule } from './modules/student/client/student.module';
 import { FinanceClientModule } from './modules/finance/client/finance-client.module';
 import { QuestionClientModule } from './modules/question/client/question-client.module';
+import { ReviewSpaceModule } from './modules/review-space/review-space.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { QuestionClientModule } from './modules/question/client/question-client.
     StudentModule,
     FinanceClientModule,
     QuestionClientModule,
+    ReviewSpaceModule,
   ],
   providers: [],
 })
