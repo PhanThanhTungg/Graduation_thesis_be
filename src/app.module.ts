@@ -21,6 +21,7 @@ import { StudentModule } from './modules/student/client/student.module';
 import { FinanceClientModule } from './modules/finance/client/finance-client.module';
 import { QuestionClientModule } from './modules/question/client/question-client.module';
 import { ReviewSpaceModule } from './modules/review-space/review-space.module';
+import { ClientSettingModule } from './modules/setting/client/client-setting.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { ReviewSpaceModule } from './modules/review-space/review-space.module';
     FinanceClientModule,
     QuestionClientModule,
     ReviewSpaceModule,
+    ClientSettingModule,
   ],
   providers: [],
 })

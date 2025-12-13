@@ -6,6 +6,7 @@ import {
   Req,
   Res,
   Get,
+  NotFoundException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { ClientAuthService } from './client-auth.service';

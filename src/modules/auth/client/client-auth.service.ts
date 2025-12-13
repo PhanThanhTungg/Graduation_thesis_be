@@ -48,39 +48,48 @@ export class ClientAuthService {
     }
 
     const passwordHash = await bcrypt.hash(registerDto.password, 10);
-    const user = await this.prisma.user.create({
-      data: {
-        fullName: registerDto.fullName,
-        email: registerDto.email,
-        passwordHash,
+
+    return await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          fullName: registerDto.fullName,
+          email: registerDto.email,
+          passwordHash,
+          role: UserRole.student,
+          country: registerDto.country,
+        },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          role: true,
+          emailVerified: true,
+          avatarUrl: true,
+          status: true,
+          country: true,
+        },
+      });
+
+      await tx.studentSetting.create({
+        data: {
+          userId: user.id,
+        },
+      });
+
+      const payload: JwtPayload = {
+        sub: user.id,
+        email: user.email,
+        type: 'client',
         role: UserRole.student,
-        country: registerDto.country,
-      },
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        role: true,
-        emailVerified: true,
-        avatarUrl: true,
-        status: true,
-        country: true,
-      },
+      };
+      const tokens = await this.jwtAuthService.generateTokenPair(payload);
+
+      return {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        user: user,
+      };
     });
-
-    const payload: JwtPayload = {
-      sub: user.id,
-      email: user.email,
-      type: 'client',
-      role: UserRole.student,
-    };
-    const tokens = await this.jwtAuthService.generateTokenPair(payload);
-
-    return {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      user: user,
-    };
   }
 
   async login(loginDto: ClientLoginDto) {
