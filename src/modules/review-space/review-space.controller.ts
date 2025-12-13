@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ReviewSpaceService } from './review-space.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UniversalAuthGuard } from 'src/common/guards/universal-auth.guard';
@@ -9,6 +9,7 @@ import {
 import { UserRole } from 'src/common/enums/common.enum';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
+import { GetLessonReviewSettingsDto } from './dto/get-lesson-review-settings.dto';
 
 @Controller('review-space')
 @ApiTags('Review Space')
@@ -21,8 +22,15 @@ export class ReviewSpaceController {
   @ApiBearerAuth()
   @ClientRoles(UserRole.student)
   @ApiOperation({ summary: 'Get all lessons in review space' })
-  async getLessonReviewSettings(@CurrentUser() user: currentClientUser) {
-    return this.reviewSpaceService.getLessonReviewSettings(user.id);
+  async getLessonReviewSettings(
+    @CurrentUser() user: currentClientUser,
+    @Query() query: GetLessonReviewSettingsDto,
+  ) {
+    return this.reviewSpaceService.getLessonReviewSettings(
+      user.id,
+      query.page,
+      query.limit,
+    );
   }
 
   @Post('/lessons/:lessonId')

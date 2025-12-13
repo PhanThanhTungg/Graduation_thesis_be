@@ -57,28 +57,49 @@ export class ReviewSpaceService {
 
   async getLessonReviewSettings(
     userId: string,
-  ): Promise<LessonReviewSettingDto[]> {
-    const reviewSettings = await this.prisma.lessonReviewSetting.findMany({
-      where: {
-        userId,
-      },
-      include: {
-        lesson: {
-          include: {
-            chapter: {
-              include: {
-                course: true,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<{
+    data: LessonReviewSettingDto[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  }> {
+    const skip = (page - 1) * limit;
+
+    const [reviewSettings, total] = await Promise.all([
+      this.prisma.lessonReviewSetting.findMany({
+        where: {
+          userId,
+        },
+        include: {
+          lesson: {
+            include: {
+              chapter: {
+                include: {
+                  course: true,
+                },
               },
             },
           },
         },
-      },
-      orderBy: {
-        id: 'desc',
-      },
-    });
+        orderBy: {
+          id: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+      this.prisma.lessonReviewSetting.count({
+        where: {
+          userId,
+        },
+      }),
+    ]);
 
-    return reviewSettings.map((setting) => ({
+    const data = reviewSettings.map((setting) => ({
       id: setting.id,
       reviewEnabled: setting.reviewEnabled,
       easinessFactor: setting.easinessFactor,
@@ -94,5 +115,15 @@ export class ReviewSpaceService {
       chapterId: setting.lesson.chapter.id,
       chapterTitle: setting.lesson.chapter.title,
     }));
+
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 }
