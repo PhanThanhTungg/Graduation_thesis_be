@@ -1,4 +1,4 @@
-import { Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ReviewSpaceService } from './review-space.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UniversalAuthGuard } from 'src/common/guards/universal-auth.guard';
@@ -16,6 +16,14 @@ import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 @UseGuards(UniversalAuthGuard, ClientRoleGuard)
 export class ReviewSpaceController {
   constructor(private readonly reviewSpaceService: ReviewSpaceService) {}
+
+  @Get('/lessons')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.student)
+  @ApiOperation({ summary: 'Get all lessons in review space' })
+  async getLessonReviewSettings(@CurrentUser() user: currentClientUser) {
+    return this.reviewSpaceService.getLessonReviewSettings(user.id);
+  }
 
   @Post('/lessons/:lessonId')
   @ApiBearerAuth()

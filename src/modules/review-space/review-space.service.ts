@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { LessonService } from '../lesson/client/lesson-client.service';
 import { successResponse } from 'src/common/interfaces/response.interface';
+import { LessonReviewSettingDto } from './dto/lesson-review-setting.dto';
 
 @Injectable()
 export class ReviewSpaceService {
@@ -52,5 +53,46 @@ export class ReviewSpaceService {
       };
       return response;
     }
+  }
+
+  async getLessonReviewSettings(
+    userId: string,
+  ): Promise<LessonReviewSettingDto[]> {
+    const reviewSettings = await this.prisma.lessonReviewSetting.findMany({
+      where: {
+        userId,
+      },
+      include: {
+        lesson: {
+          include: {
+            chapter: {
+              include: {
+                course: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        id: 'desc',
+      },
+    });
+
+    return reviewSettings.map((setting) => ({
+      id: setting.id,
+      reviewEnabled: setting.reviewEnabled,
+      easinessFactor: setting.easinessFactor,
+      intervalDays: setting.intervalDays,
+      status: setting.status,
+      reviewStep: setting.reviewStep,
+      lapsed: setting.lapsed,
+      userId: setting.userId,
+      lessonId: setting.lessonId,
+      lessonTitle: setting.lesson.title,
+      courseTitle: setting.lesson.chapter.course.title,
+      courseId: setting.lesson.chapter.course.id,
+      chapterId: setting.lesson.chapter.id,
+      chapterTitle: setting.lesson.chapter.title,
+    }));
   }
 }
