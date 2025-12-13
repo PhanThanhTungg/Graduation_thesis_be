@@ -20,11 +20,11 @@ export class ReviewSpaceController {
   @Post('/lessons/:lessonId')
   @ApiBearerAuth()
   @ClientRoles(UserRole.student)
-  @ApiOperation({ summary: 'Add a lesson on review space' })
-  async addLessonToReviewSpace(
+  @ApiOperation({ summary: 'Toggle lesson in review space (add/remove)' })
+  async toggleLessonInReviewSpace(
     @Param('lessonId') lessonId: string,
     @CurrentUser() user: currentClientUser,
   ) {
-    return this.reviewSpaceService.addLessonToReviewSpace(lessonId, user.id);
+    return this.reviewSpaceService.toggleLessonInReviewSpace(lessonId, user.id);
   }
 }

@@ -10,22 +10,47 @@ export class ReviewSpaceService {
     private readonly lessonService: LessonService,
   ) {}
 
-  async addLessonToReviewSpace(lessonId: string, userId: string) {
+  async toggleLessonInReviewSpace(lessonId: string, userId: string) {
     const lesson = await this.lessonService.getLessonById(lessonId);
     if (!lesson) {
       throw new NotFoundException('Lesson not found');
     }
-    const lessonReviewSetting = await this.prisma.lessonReviewSetting.create({
-      data: {
-        lessonId,
-        userId,
-      },
-    });
 
-    const response: successResponse = {
-      message: 'Lesson added to review space successfully',
-      data: lessonReviewSetting,
-    };
-    return response;
+    // Check if lesson already exists in review space
+    const existingReviewSetting =
+      await this.prisma.lessonReviewSetting.findUnique({
+        where: {
+          lessonId,
+        },
+      });
+
+    if (existingReviewSetting) {
+      // Remove from review space
+      await this.prisma.lessonReviewSetting.delete({
+        where: {
+          lessonId,
+        },
+      });
+
+      const response: successResponse = {
+        message: 'Lesson removed from review space successfully',
+        data: { isInReviewSpace: false },
+      };
+      return response;
+    } else {
+      // Add to review space
+      const lessonReviewSetting = await this.prisma.lessonReviewSetting.create({
+        data: {
+          lessonId,
+          userId,
+        },
+      });
+
+      const response: successResponse = {
+        message: 'Lesson added to review space successfully',
+        data: { ...lessonReviewSetting, isInReviewSpace: true },
+      };
+      return response;
+    }
   }
 }

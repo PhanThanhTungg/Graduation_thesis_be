@@ -237,6 +237,9 @@ export class LessonTreeItemDto {
   @ApiProperty({ enum: LessonProgress })
   progress: LessonProgress;
 
+  @ApiProperty({ description: 'Whether this lesson is in review space' })
+  isInReviewSpace: boolean;
+
   @ApiProperty()
   createdAt: Date;
 

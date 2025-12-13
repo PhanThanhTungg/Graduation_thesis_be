@@ -387,6 +387,10 @@ export class LessonService {
               where: { userId },
               select: { progress: true },
             },
+            reviewSetting: {
+              where: { userId },
+              select: { id: true },
+            },
           },
         },
       },
@@ -409,6 +413,7 @@ export class LessonService {
         videoLesson: lesson.videoLesson,
         progress:
           lesson.userProgress?.[0]?.progress || LessonProgress.not_started,
+        isInReviewSpace: !!lesson.reviewSetting,
         createdAt: lesson.createdAt,
         updatedAt: lesson.updatedAt,
       }));
