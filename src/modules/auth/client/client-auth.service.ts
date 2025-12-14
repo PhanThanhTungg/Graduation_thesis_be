@@ -16,7 +16,6 @@ import {
 import { UserRole } from 'src/common/enums/common.enum';
 import { LoggingService } from 'src/shared/logging/logging.service';
 import { randomBytes } from 'crypto';
-import { User } from '@prisma/client';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 import { EmailService } from 'src/shared/email/email.service';
 import { successResponse } from 'src/common/interfaces/response.interface';
@@ -434,6 +433,24 @@ export class ClientAuthService {
     };
   }
 
+  async checkUserById(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    return user;
+  }
+
+  async findUserByTelegramId(telegramId: string) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        studentSetting: {
+          telegramId,
+        },
+      },
+    });
+    return user;
+  }
+
   private generateVerificationToken(): string {
     return randomBytes(32).toString('hex');
   }
@@ -462,6 +479,7 @@ export class ClientAuthService {
       throw new UnauthorizedException('Account is inactive');
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }

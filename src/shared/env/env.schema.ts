@@ -20,6 +20,9 @@ export class EnvSchema {
   @IsString()
   DATABASE_URL: string;
 
+  @IsString()
+  DEPLOY_URL: string;
+
   // JWT API
   @IsString()
   JWT_SECRET: string;
@@ -110,4 +113,9 @@ export class EnvSchema {
   GROQ_TEMPERATURE: number;
   @IsNumber()
   GROQ_MAX_TOKEN: number;
+
+  // BOT
+  // Telegram Bot Token
+  @IsString()
+  TELE_BOT_TOKEN: string;
 }

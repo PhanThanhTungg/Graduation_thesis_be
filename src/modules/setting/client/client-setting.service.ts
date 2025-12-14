@@ -74,6 +74,15 @@ export class ClientSettingService {
     throw new BadRequestException(`Unknown setting type: ${type}`);
   }
 
+  async setTelegramId(telegramId: string, userId: string) {
+    const updatedSetting = await this.prisma.studentSetting.upsert({
+      where: { userId },
+      create: { userId, telegramId },
+      update: { telegramId },
+    });
+    return updatedSetting;
+  }
+
   private async updateSprSettings(
     updateDto: UpdateSprSettingDto,
     userId: string,

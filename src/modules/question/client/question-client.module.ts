@@ -8,5 +8,6 @@ import { GroqModule } from 'src/shared/AI/groq/groq.module';
   controllers: [QuestionController],
   providers: [QuestionService],
   imports: [GeminiModule, GroqModule],
+  exports: [QuestionService],
 })
-export class QuestionClientModule {}
+export class QuestionModule {}
