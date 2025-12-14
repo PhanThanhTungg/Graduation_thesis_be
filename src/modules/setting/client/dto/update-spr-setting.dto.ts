@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsInt, IsOptional, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsInt, IsOptional, Min } from 'class-validator';
 import { AiModel, SprBot } from '@prisma/client';
 
 export class UpdateSprSettingDto {
@@ -30,4 +30,12 @@ export class UpdateSprSettingDto {
   @IsInt()
   @Min(1)
   sprInterval?: number;
+
+  @ApiPropertyOptional({
+    description: 'Enable spaced repetition',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  enabledSpr?: boolean;
 }

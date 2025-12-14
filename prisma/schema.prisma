@@ -192,6 +192,7 @@ model StudentSetting {
   telegramId String? @unique @map("telegram_id")
   discordId  String? @unique @map("discord_id")
 
+  enabledSpr  Boolean @default(false) @map("enabled_spr")
   sprBot      SprBot  @default(telegram) @map("spr_bot")
   sprModel    AiModel @default(groq) @map("spr_model")
   sprInterval Int?    @default(600) @map("spr_interval")

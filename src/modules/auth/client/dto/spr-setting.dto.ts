@@ -16,4 +16,7 @@ export class SprSettingDto {
 
   @ApiProperty()
   sprInterval: number;
+
+  @ApiProperty()
+  enabledSpr: boolean;
 }

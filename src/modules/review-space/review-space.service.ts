@@ -107,6 +107,9 @@ export class ReviewSpaceService {
       status: setting.status,
       reviewStep: setting.reviewStep,
       lapsed: setting.lapsed,
+      lastReviewedAt: setting.lastReviewedAt,
+      note: setting.note,
+      difficulty: setting.difficulty,
       userId: setting.userId,
       lessonId: setting.lessonId,
       lessonTitle: setting.lesson.title,
@@ -124,6 +127,116 @@ export class ReviewSpaceService {
         total,
         totalPages: Math.ceil(total / limit),
       },
+    };
+  }
+
+  async getLessonReviewSettingByLessonId(
+    lessonId: string,
+    userId: string,
+  ): Promise<LessonReviewSettingDto> {
+    const reviewSetting = await this.prisma.lessonReviewSetting.findFirst({
+      where: {
+        lessonId,
+        userId,
+      },
+      include: {
+        lesson: {
+          include: {
+            chapter: {
+              include: {
+                course: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!reviewSetting) {
+      throw new NotFoundException('Lesson review setting not found');
+    }
+
+    return {
+      id: reviewSetting.id,
+      reviewEnabled: reviewSetting.reviewEnabled,
+      easinessFactor: reviewSetting.easinessFactor,
+      intervalDays: reviewSetting.intervalDays,
+      status: reviewSetting.status,
+      reviewStep: reviewSetting.reviewStep,
+      lapsed: reviewSetting.lapsed,
+      lastReviewedAt: reviewSetting.lastReviewedAt,
+      note: reviewSetting.note,
+      difficulty: reviewSetting.difficulty,
+      userId: reviewSetting.userId,
+      lessonId: reviewSetting.lessonId,
+      lessonTitle: reviewSetting.lesson.title,
+      courseTitle: reviewSetting.lesson.chapter.course.title,
+      courseId: reviewSetting.lesson.chapter.course.id,
+      chapterId: reviewSetting.lesson.chapter.id,
+      chapterTitle: reviewSetting.lesson.chapter.title,
+    };
+  }
+
+  async updateLessonReviewSetting(
+    lessonId: string,
+    userId: string,
+    updateDto: { reviewEnabled?: boolean; note?: string },
+  ): Promise<LessonReviewSettingDto> {
+    const reviewSetting = await this.prisma.lessonReviewSetting.findFirst({
+      where: {
+        lessonId,
+        userId,
+      },
+    });
+
+    if (!reviewSetting) {
+      throw new NotFoundException('Lesson review setting not found');
+    }
+
+    const updateData: { reviewEnabled?: boolean; note?: string } = {};
+    if (updateDto.reviewEnabled !== undefined) {
+      updateData.reviewEnabled = updateDto.reviewEnabled;
+    }
+    if (updateDto.note !== undefined) {
+      updateData.note = updateDto.note;
+    }
+
+    const updatedSetting = await this.prisma.lessonReviewSetting.update({
+      where: {
+        id: reviewSetting.id,
+      },
+      data: updateData,
+      include: {
+        lesson: {
+          include: {
+            chapter: {
+              include: {
+                course: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      id: updatedSetting.id,
+      reviewEnabled: updatedSetting.reviewEnabled,
+      easinessFactor: updatedSetting.easinessFactor,
+      intervalDays: updatedSetting.intervalDays,
+      status: updatedSetting.status,
+      reviewStep: updatedSetting.reviewStep,
+      lapsed: updatedSetting.lapsed,
+      lastReviewedAt: updatedSetting.lastReviewedAt,
+      note: updatedSetting.note,
+      difficulty: updatedSetting.difficulty,
+      userId: updatedSetting.userId,
+      lessonId: updatedSetting.lessonId,
+      lessonTitle: updatedSetting.lesson.title,
+      courseTitle: updatedSetting.lesson.chapter.course.title,
+      courseId: updatedSetting.lesson.chapter.course.id,
+      chapterId: updatedSetting.lesson.chapter.id,
+      chapterTitle: updatedSetting.lesson.chapter.title,
     };
   }
 }

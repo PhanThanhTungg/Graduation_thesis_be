@@ -32,6 +32,7 @@ export class ClientSettingService {
         sprBot: true,
         sprModel: true,
         sprInterval: true,
+        enabledSpr: true,
       },
     });
 
@@ -42,6 +43,7 @@ export class ClientSettingService {
         sprBot: 'telegram',
         sprModel: 'groq',
         sprInterval: 600,
+        enabledSpr: false,
       };
 
       const response: successResponse = {
@@ -57,6 +59,7 @@ export class ClientSettingService {
       sprBot: studentSetting.sprBot,
       sprModel: studentSetting.sprModel,
       sprInterval: studentSetting.sprInterval ?? 600,
+      enabledSpr: studentSetting.enabledSpr ?? false,
     };
 
     const response: successResponse = {
@@ -95,6 +98,7 @@ export class ClientSettingService {
       sprBot?: UpdateSprSettingDto['sprBot'];
       sprModel?: UpdateSprSettingDto['sprModel'];
       sprInterval?: number;
+      enabledSpr?: boolean;
     } = {};
 
     if (updateDto.sprBot !== undefined) {
@@ -106,6 +110,9 @@ export class ClientSettingService {
     if (updateDto.sprInterval !== undefined) {
       updateData.sprInterval = updateDto.sprInterval;
     }
+    if (updateDto.enabledSpr !== undefined) {
+      updateData.enabledSpr = updateDto.enabledSpr;
+    }
 
     const updatedSetting = await this.prisma.studentSetting.upsert({
       where: { userId },
@@ -114,6 +121,7 @@ export class ClientSettingService {
         sprBot: updateDto.sprBot ?? 'telegram',
         sprModel: updateDto.sprModel ?? 'groq',
         sprInterval: updateDto.sprInterval ?? 600,
+        enabledSpr: updateDto.enabledSpr ?? false,
       },
       update: updateData,
       select: {
@@ -122,6 +130,7 @@ export class ClientSettingService {
         sprBot: true,
         sprModel: true,
         sprInterval: true,
+        enabledSpr: true,
       },
     });
 
@@ -131,6 +140,7 @@ export class ClientSettingService {
       sprBot: updatedSetting.sprBot,
       sprModel: updatedSetting.sprModel,
       sprInterval: updatedSetting.sprInterval ?? 600,
+      enabledSpr: updatedSetting.enabledSpr ?? false,
     };
 
     const response: successResponse = {

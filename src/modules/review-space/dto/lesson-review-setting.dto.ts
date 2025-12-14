@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { LessonReviewStatus } from '@prisma/client';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Difficulty, LessonReviewStatus } from '@prisma/client';
 
 export class LessonReviewSettingDto {
   @ApiProperty()
@@ -22,6 +22,15 @@ export class LessonReviewSettingDto {
 
   @ApiProperty()
   lapsed: number;
+
+  @ApiPropertyOptional()
+  lastReviewedAt: Date | null;
+
+  @ApiPropertyOptional()
+  note: string | null;
+
+  @ApiProperty({ enum: Difficulty })
+  difficulty: Difficulty;
 
   @ApiProperty()
   userId: string;
