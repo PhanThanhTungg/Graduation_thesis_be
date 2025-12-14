@@ -22,7 +22,6 @@ export class TelegramService {
   }
 
   async handleUpdate(message: any) {
-    console.log(message);
     if (message && message.text) {
       const chatId = message.chat.id;
       const text = message.text;

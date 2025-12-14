@@ -3,10 +3,14 @@ import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { successResponse } from 'src/common/interfaces/response.interface';
 import { SprSettingDto } from '../../auth/client/dto/spr-setting.dto';
 import { UpdateSprSettingDto } from './dto/update-spr-setting.dto';
+import { LoggingService } from 'src/shared/logging/logging.service';
 
 @Injectable()
 export class ClientSettingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly loggingService: LoggingService,
+  ) {}
 
   async getSettingsByType(
     type: string,
