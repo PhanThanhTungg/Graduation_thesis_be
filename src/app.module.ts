@@ -22,6 +22,7 @@ import { FinanceClientModule } from './modules/finance/client/finance-client.mod
 import { QuestionModule } from './modules/question/client/question-client.module';
 import { ReviewSpaceModule } from './modules/review-space/review-space.module';
 import { ClientSettingModule } from './modules/setting/client/client-setting.module';
+import { AdminSettingModule } from './modules/setting/admin/admin-setting.module';
 import { TelegramModule } from './modules/bot/telegram/telegram.module';
 
 @Module({
@@ -49,6 +50,7 @@ import { TelegramModule } from './modules/bot/telegram/telegram.module';
     QuestionModule,
     ReviewSpaceModule,
     ClientSettingModule,
+    AdminSettingModule,
     TelegramModule,
   ],
   providers: [],

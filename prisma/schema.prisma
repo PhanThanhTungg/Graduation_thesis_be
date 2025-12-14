@@ -89,6 +89,30 @@ model Admin {
   @@map("admin")
 }
 
+model AdminSetting {
+  id String @id @default(uuid())
+
+  // web settings
+  webTitle String? @map("web_title")
+  webFavicon String? @map("web_favicon")
+  webDescription String? @map("web_description")
+  webKeywords String[] @map("web_keywords")
+  webAuthor String? @map("web_author")
+  webCopyright String? @map("web_copyright")
+
+  // spr settings
+  learningSteps Float[] @map("learning_steps") // Các bước học: 1 phút, 10 phút, 1 ngày (tính theo đơn vị phút)
+  lastStepFromLearningToReview Int @default(5) @map("last_step_from_learning_to_review") // Bước cuối cùng đểtừ leanring sang reviewing.
+  iniInterval Int @default(2) @map("ini_interval") // interval đầu tiên từ learning sang reviewing.
+  iniEasyInterval Int @default(4) @map("ini_easy_interval") // interval đầu tiên từ learning sang reviewing khi nút easy.
+  leechThreshold Int @default(8) @map("leech_threshold") // Tạm ngưng thẻ nếu quên n lần
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("admin_setting")
+}
+
 model AdminRole {
   id          String                @id @default(uuid())
   title       String?
@@ -163,20 +187,20 @@ model User {
 }
 
 model StudentSetting {
-  id                   String        @id @default(uuid())
-  telegramId           String?       @unique @map("telegram_id")
-  discordId            String?       @unique @map("discord_id")
+  id         String  @id @default(uuid())
+  telegramId String? @unique @map("telegram_id")
+  discordId  String? @unique @map("discord_id")
 
-  sprBot               SprBot        @default(telegram) @map("spr_bot")
-  sprModel             AiModel       @default(groq) @map("spr_model")
-  sprInterval          Int?          @default(600) @map("spr_interval")
+  sprBot      SprBot  @default(telegram) @map("spr_bot")
+  sprModel    AiModel @default(groq) @map("spr_model")
+  sprInterval Int?    @default(600) @map("spr_interval")
 
-  streak               Int           @default(0)
-  longestStreak        Int           @default(0) @map("longest_streak")
-  lastActiveDate       DateTime?     @map("last_active_date")
+  streak         Int       @default(0)
+  longestStreak  Int       @default(0) @map("longest_streak")
+  lastActiveDate DateTime? @map("last_active_date")
 
-  userId   String  @unique @map("user_id")
-  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String @unique @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model TeacherSetting {
@@ -312,6 +336,10 @@ model LessonReviewSetting {
   status         LessonReviewStatus @default(new) @map("status")
   reviewStep     Int                @default(1) @map("review_step") // Bước ôn tập hiện tại
   lapsed         Int                @default(0) // Số lần ther bij trả lời sai khi đang ở reviewing
+  lastReviewedAt DateTime?          @map("last_reviewed_at")
+
+  note String? @map("note")
+  difficulty Difficulty @default(medium) @map("difficulty")
 
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -365,14 +393,15 @@ model File {
 }
 
 model Question {
-  id         String       @id @default(uuid())
-  statement  String
-  answer     String?
-  score      Int?
-  explain    String?
-  aiFeedback String?
-  type       TypeQuestion
-  difficulty Difficulty   @default(medium)
+  id          String       @id @default(uuid())
+  statement   String
+  answer      String?
+  score       Int?
+  explain     String?
+  aiFeedback  String?
+  isForReview Boolean      @default(false) @map("is_for_review")
+  type        TypeQuestion
+  difficulty  Difficulty   @default(medium)
 
   lessonId String @map("lesson_id")
   lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
