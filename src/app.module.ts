@@ -19,6 +19,7 @@ import { PaymentClientModule } from './modules/payment/client/payment-client.mod
 import { NoteClientModule } from './modules/note/client/note-client.module';
 import { StudentModule } from './modules/student/client/student.module';
 import { FinanceClientModule } from './modules/finance/client/finance-client.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { FinanceClientModule } from './modules/finance/client/finance-client.mod
     NoteClientModule,
     StudentModule,
     FinanceClientModule,
+    AnalyticsModule,
   ],
   providers: [],
 })
