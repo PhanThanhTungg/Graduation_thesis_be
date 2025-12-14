@@ -101,6 +101,7 @@ model User {
   avatarUrl     String?         @map("avatar_url")
   status        Status          @default(active)
   country       String          @db.VarChar(50)
+  timezone      String?         @db.VarChar(100)
   
   teacherSetting           TeacherSetting?
   courses                  Course[]                @relation("TeacherCourses")

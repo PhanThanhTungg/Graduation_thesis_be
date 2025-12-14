@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger"
-import { IsEmail, IsString, Matches, MinLength, IsNotEmpty } from "class-validator"
+import { IsEmail, IsString, Matches, MinLength, IsNotEmpty, IsOptional } from "class-validator"
 
 export class ClientLoginDto {
   @IsEmail()
@@ -31,6 +31,11 @@ export class ClientRegisterDto {
   @IsString()
   @ApiProperty({ description: 'The country of the client is got from API'})
   country: string
+
+  @IsString()
+  @IsOptional()
+  @ApiProperty({ description: 'The timezone of the client', required: false, example: 'Asia/Ho_Chi_Minh' })
+  timezone?: string
 
   @IsString()
   @IsNotEmpty()
