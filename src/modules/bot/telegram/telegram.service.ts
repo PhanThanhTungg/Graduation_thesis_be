@@ -31,8 +31,8 @@ export class TelegramService {
           const checkUser = await this.clientAuthService.checkUserById(userId);
           if (checkUser) {
             await this.clientSettingService.setTelegramId(
-              checkUser.id,
               chatId + '',
+              checkUser.id,
             );
             this.sendMessage(
               chatId,
