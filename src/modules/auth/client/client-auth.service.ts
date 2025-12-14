@@ -56,6 +56,7 @@ export class ClientAuthService {
           passwordHash,
           role: UserRole.student,
           country: registerDto.country,
+          timezone: registerDto.timezone,
         },
         select: {
           id: true,
@@ -66,6 +67,7 @@ export class ClientAuthService {
           avatarUrl: true,
           status: true,
           country: true,
+          timezone: true,
         },
       });
 
@@ -345,6 +347,7 @@ export class ClientAuthService {
           role: UserRole.student, // Default role
           country: 'Unknown', // You can get this from Google API later
           passwordHash: '', // No password hash needed for Google users
+          timezone: null,
         },
       });
     }
@@ -405,6 +408,7 @@ export class ClientAuthService {
           role: UserRole.student, // Default role
           country: 'Unknown', // You can get this from Facebook API later
           passwordHash: '', // No password hash needed for Facebook users
+          timezone: null,
         },
       });
     }

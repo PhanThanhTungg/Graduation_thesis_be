@@ -24,6 +24,7 @@ import { ReviewSpaceModule } from './modules/review-space/review-space.module';
 import { ClientSettingModule } from './modules/setting/client/client-setting.module';
 import { AdminSettingModule } from './modules/setting/admin/admin-setting.module';
 import { TelegramModule } from './modules/bot/telegram/telegram.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { TelegramModule } from './modules/bot/telegram/telegram.module';
     ClientSettingModule,
     AdminSettingModule,
     TelegramModule,
+    AnalyticsModule,
   ],
   providers: [],
 })
