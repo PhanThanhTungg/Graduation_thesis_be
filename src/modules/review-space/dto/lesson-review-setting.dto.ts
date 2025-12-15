@@ -52,4 +52,10 @@ export class LessonReviewSettingDto {
 
   @ApiProperty()
   chapterTitle: string;
+
+  @ApiProperty()
+  courseSlug: string;
+
+  @ApiProperty()
+  lessonSlug: string;
 }

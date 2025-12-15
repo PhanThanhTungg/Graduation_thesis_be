@@ -117,6 +117,8 @@ export class ReviewSpaceService {
       courseId: setting.lesson.chapter.course.id,
       chapterId: setting.lesson.chapter.id,
       chapterTitle: setting.lesson.chapter.title,
+      courseSlug: setting.lesson.chapter.course.slug,
+      lessonSlug: setting.lesson.slug,
     }));
 
     return {
@@ -174,6 +176,8 @@ export class ReviewSpaceService {
       courseId: reviewSetting.lesson.chapter.course.id,
       chapterId: reviewSetting.lesson.chapter.id,
       chapterTitle: reviewSetting.lesson.chapter.title,
+      courseSlug: reviewSetting.lesson.chapter.course.slug,
+      lessonSlug: reviewSetting.lesson.slug,
     };
   }
 
@@ -237,6 +241,8 @@ export class ReviewSpaceService {
       courseId: updatedSetting.lesson.chapter.course.id,
       chapterId: updatedSetting.lesson.chapter.id,
       chapterTitle: updatedSetting.lesson.chapter.title,
+      courseSlug: updatedSetting.lesson.chapter.course.slug,
+      lessonSlug: updatedSetting.lesson.slug,
     };
   }
 }

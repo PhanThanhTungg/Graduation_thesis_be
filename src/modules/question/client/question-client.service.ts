@@ -45,6 +45,14 @@ export class QuestionService {
         'Lesson is not configured for AI question generation',
       );
 
+    const unansweredQuestions = await this.getUnansweredQuestion(
+      lessonSlug,
+      userId,
+    );
+    if (unansweredQuestions.data) {
+      throw new BadRequestException('You have already answered question');
+    }
+
     const prompt = genQuestionPrompt.lesson(
       lesson.title,
       lesson.promptForGenQues,
