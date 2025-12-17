@@ -25,6 +25,7 @@ import { ClientSettingModule } from './modules/setting/client/client-setting.mod
 import { AdminSettingModule } from './modules/setting/admin/admin-setting.module';
 import { TelegramModule } from './modules/bot/telegram/telegram.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { AutomationModule } from './automation/automation.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     AdminSettingModule,
     TelegramModule,
     AnalyticsModule,
+    AutomationModule,
   ],
   providers: [],
 })

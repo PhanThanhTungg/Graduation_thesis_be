@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, forwardRef } from '@nestjs/common';
 import { ClientAuthService } from 'src/modules/auth/client/client-auth.service';
 import { QuestionService } from 'src/modules/question/client/question-client.service';
 import { ClientSettingService } from 'src/modules/setting/client/client-setting.service';
+import { Model } from 'src/modules/question/client/dto/generate.dto';
 import { EnvService } from 'src/shared/env/env.service';
 import * as TelegramBot from 'node-telegram-bot-api';
 
@@ -12,6 +13,7 @@ export class TelegramService {
   constructor(
     private readonly envService: EnvService,
     private readonly clientAuthService: ClientAuthService,
+    @Inject(forwardRef(() => QuestionService))
     private readonly questionService: QuestionService,
     private readonly clientSettingService: ClientSettingService,
   ) {
@@ -60,23 +62,36 @@ export class TelegramService {
               '🚫 <code>please answer a question, do not send free messages</code>',
             );
           } else {
-            // const questionId = reply.text.split('\n').pop(); // dòng cuối cùng là id
-            // const question = await this.questionsService.getQuestion(
-            //   questionId,
-            //   user.id,
-            // );
-            // if (!question) this.sendMessage(chatId, '🚫 <code>question not found</code>');
-            // const questionAnswered = await this.questionsService.answerQuestion(
-            //   questionId,
-            //   { answer: text },
-            //   user,
-            // );
-            //  this.sendMessage(
-            //   chatId,
-            //   `<b>Điểm:</b> ${questionAnswered.score}\n <b>Giải thích:</b> ${questionAnswered.explain}\n` +
-            //     `<b>AI Feedback:</b> ${questionAnswered.aiFeedback}`,
-            // );
-            this.sendMessage(chatId, `Gửi câu hỏi`);
+            const questionId = reply.text.split('\n').pop()?.trim();
+            if (!questionId) {
+              this.sendMessage(
+                chatId,
+                '🚫 <code>question id not found in replied message</code>',
+              );
+              return;
+            }
+
+            try {
+              const result = await this.questionService.answerQuestion(
+                questionId,
+                {
+                  answer: text,
+                  model: Model.GROQ,
+                } as any,
+                user.id,
+              );
+              const data = result?.data ?? result;
+
+              this.sendMessage(
+                chatId,
+                `<b>Score:</b> ${data.score}\n<b>Explain:</b> ${data.explain}\n<b>AI Feedback:</b> ${data.aiFeedback}`,
+              );
+            } catch (error) {
+              this.sendMessage(
+                chatId,
+                `🚫 <code>failed to answer question: ${error.message}</code>`,
+              );
+            }
           }
         }
       } catch (error) {

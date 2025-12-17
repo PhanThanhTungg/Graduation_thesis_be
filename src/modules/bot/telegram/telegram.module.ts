@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TelegramController } from './telegram.controller';
 import { TelegramService } from './telegram.service';
 import { ClientAuthModule } from 'src/modules/auth/client/client-auth.module';
@@ -8,7 +8,11 @@ import { ClientSettingModule } from 'src/modules/setting/client/client-setting.m
 @Module({
   controllers: [TelegramController],
   providers: [TelegramService],
-  imports: [ClientAuthModule, QuestionModule, ClientSettingModule],
+  imports: [
+    ClientAuthModule,
+    forwardRef(() => QuestionModule),
+    ClientSettingModule,
+  ],
   exports: [TelegramService],
 })
 export class TelegramModule {}

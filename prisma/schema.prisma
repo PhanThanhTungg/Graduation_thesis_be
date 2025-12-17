@@ -334,7 +334,7 @@ model LessonReviewSetting {
   reviewEnabled Boolean @default(true) @map("review_enabled")
 
   easinessFactor Float              @default(2.5) @map("easiness_factor") // Hệ số mô tả mức độ dễ
-  intervalDays   Int                @default(0) // Khoảng thời gian cho lần ôn tập tiếp theo
+  interval   Int             @default(0) @map("interval") // Khoảng thời gian cho lần ôn tập tiếp theo
   status         LessonReviewStatus @default(new) @map("status")
   reviewStep     Int                @default(1) @map("review_step") // Bước ôn tập hiện tại
   lapsed         Int                @default(0) // Số lần ther bij trả lời sai khi đang ở reviewing

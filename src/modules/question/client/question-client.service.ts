@@ -14,6 +14,9 @@ import fileUtils from 'src/common/utils/file.util';
 import { AnswerQuestionDto } from './dto/answer-question.dto';
 import { answerQuestionPrompt } from 'src/shared/AI/prompt/question/answer.prompt';
 import { QuestionHistoryQueryDto } from './dto/question-history-query.dto';
+import { AdminSettingService } from 'src/modules/setting/admin/admin-setting.service';
+import { LessonReviewStatus } from '@prisma/client';
+import { transformScore } from 'src/helpers/question.helper';
 
 @Injectable()
 export class QuestionService {
@@ -22,6 +25,7 @@ export class QuestionService {
     private readonly geminiService: GeminiService,
     private readonly groqService: GroqService,
     private readonly loggingService: LoggingService,
+    private readonly adminSettingService: AdminSettingService,
   ) {}
 
   async generateQuestions(
@@ -161,6 +165,7 @@ export class QuestionService {
         aiFeedback: aiResponse.aiFeedback,
       },
     });
+    // await this.updateLessonReviewStateOnAnswer(question.userId, question.lessonId, aiResponse.score);
     const response: successResponse = {
       message: 'Answer question successfully',
       data: updatedQuestion,
@@ -173,6 +178,7 @@ export class QuestionService {
       where: { id: questionId },
       include: {
         user: true,
+        lesson: true,
       },
     });
     if (!question) throw new NotFoundException('Question not found');
@@ -281,5 +287,110 @@ export class QuestionService {
       data: unansweredQuestion,
     };
     return response;
+  }
+
+  async scoreQuestionForSpr(questionId: string, userId: string) {
+    const question = await this.getQuestion(questionId, userId);
+    if (!question.answer)
+      throw new BadRequestException('Question not answered');
+    if (!question.score)
+      throw new BadRequestException('Question already scored');
+
+    const lessonReviewSetting = await this.prisma.lessonReviewSetting.findFirst(
+      {
+        where: {
+          userId,
+          lessonId: question.lessonId,
+        },
+      },
+    );
+
+    const adminSetting = (await this.adminSettingService.getSettings()).data;
+    if (!adminSetting) throw new BadRequestException('Admin setting not found');
+
+    if (!lessonReviewSetting)
+      throw new BadRequestException('Lesson review setting not found');
+    if (!lessonReviewSetting.reviewEnabled)
+      throw new BadRequestException('Lesson review is not enabled');
+    if (lessonReviewSetting.status === LessonReviewStatus.suspending)
+      throw new BadRequestException('Lesson review is suspending');
+
+    const evalScore = transformScore(question.score);
+    let {
+      easinessFactor: lsEF,
+      interval: lsInterval,
+      status: lsStatus,
+      reviewStep: lsReviewStep,
+      lapsed: lsLapsed,
+    } = lessonReviewSetting;
+    const {
+      learningSteps: stLeanringSteps,
+      lastStepFromLearningToReview: stLastStepFromLearningToReview,
+      iniInterval: stIniInterval,
+      iniEasyInterval: stIniEasyInterval,
+      leechThreshold: stLeechThreshold,
+    } = adminSetting;
+
+    if (evalScore !== 0) lsLapsed = 0;
+    if (
+      lsStatus === LessonReviewStatus.new ||
+      lsStatus === LessonReviewStatus.learning
+    ) {
+      if (evalScore === 0) lsLapsed += 1;
+
+      if (evalScore === 1)
+        lsReviewStep = lsReviewStep >= 1 ? lsReviewStep - 1 : 0;
+      else if (evalScore === 4) {
+        if (lsReviewStep >= stLastStepFromLearningToReview) {
+          lsStatus = LessonReviewStatus.reviewing;
+          lsInterval = stIniInterval;
+        }
+        lsReviewStep += 1;
+      } else if (evalScore === 5) {
+        lsStatus = LessonReviewStatus.reviewing;
+        lsInterval = stIniEasyInterval;
+      }
+
+      if (lsStatus === LessonReviewStatus.new) {
+        lsStatus = LessonReviewStatus.learning;
+        lsInterval = stLeanringSteps[lsReviewStep - 1];
+      }
+    } else if (lsStatus === LessonReviewStatus.reviewing) {
+      if (evalScore === 0) {
+        lsStatus = LessonReviewStatus.learning;
+        lsReviewStep = stLastStepFromLearningToReview - 2;
+      } else if (evalScore <= 3) {
+        lsStatus = LessonReviewStatus.lapsed;
+        lsInterval *= 0.25 * evalScore;
+      } else if (evalScore <= 5) {
+        lsEF += 0.1 - (5 - evalScore) * (0.08 + (5 - evalScore) * 0.02);
+        lsInterval *= lsEF;
+      }
+    } else if (lsStatus === LessonReviewStatus.lapsed) {
+      if (evalScore === 0) {
+        lsStatus = LessonReviewStatus.learning;
+        lsReviewStep = stLastStepFromLearningToReview - 1;
+      } else if (evalScore <= 3) {
+        lsStatus = LessonReviewStatus.lapsed;
+        lsReviewStep = stLastStepFromLearningToReview;
+      } else if (evalScore <= 5) {
+        lsStatus = LessonReviewStatus.reviewing;
+        lsInterval = stIniInterval;
+      }
+    }
+
+    await this.prisma.lessonReviewSetting.update({
+      where: {
+        id: lessonReviewSetting.id,
+      },
+      data: {
+        easinessFactor: lsEF,
+        interval: lsInterval,
+        status: lsStatus,
+        reviewStep: lsReviewStep,
+        lapsed: lsLapsed,
+        lastReviewedAt: new Date(),
+      },
+    });
   }
 }

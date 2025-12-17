@@ -12,7 +12,7 @@ export class LessonReviewSettingDto {
   easinessFactor: number;
 
   @ApiProperty()
-  intervalDays: number;
+  interval: number;
 
   @ApiProperty({ enum: LessonReviewStatus })
   status: LessonReviewStatus;
