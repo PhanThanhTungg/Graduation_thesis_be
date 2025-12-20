@@ -13,6 +13,8 @@ import { ClientCategoryModule } from './modules/category/client/client-category.
 import { LessonClientModule } from './modules/lesson/client/lesson-client.module';
 import { AdminCourseModule } from './modules/course/admin/admin-course.module';
 import { AdminUserModule } from './modules/user/admin/admin-user.module';
+import { ClientUserModule } from './modules/user/client/client-user.module';
+import { ChatClientModule } from './modules/chat/client/chat-client.module';
 import { VoucherClientModule } from './modules/voucher/client/voucher-client.module';
 import { ReviewClientModule } from './modules/review/client/review-client.module';
 import { PaymentClientModule } from './modules/payment/client/payment-client.module';
@@ -44,6 +46,8 @@ import { SocketModule } from './modules/socket/socket.module';
     ClientCategoryModule,
     LessonClientModule,
     AdminUserModule,
+    ClientUserModule,
+    ChatClientModule,
     VoucherClientModule,
     ReviewClientModule,
     PaymentClientModule,
