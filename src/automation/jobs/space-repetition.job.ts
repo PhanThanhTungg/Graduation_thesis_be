@@ -114,11 +114,12 @@ export class SpaceRepetitionJob {
           type: unAnsweredQuestion.type,
           statement: unAnsweredQuestion.statement,
         });
-        await this.telegramService.sendMessage(
-          student.telegramId as string,
-          `<b>Question (${unAnsweredQuestion.type}):</b>\n${formattedQuestion}\n\n<code>${unAnsweredQuestion.id}</code>`,
-        );
-        continue;
+        if (student.sprBot === SprBot.telegram) {
+          await this.telegramService.sendMessage(
+            student.telegramId as string,
+            `<b>Question (${unAnsweredQuestion.type}):</b>\n${formattedQuestion}\n\n<code>${unAnsweredQuestion.id}</code>`,
+          );
+        }
       }
 
       // const question = await this.prisma.question.findFirst({

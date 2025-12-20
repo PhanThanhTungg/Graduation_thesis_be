@@ -26,6 +26,7 @@ import { AdminSettingModule } from './modules/setting/admin/admin-setting.module
 import { TelegramModule } from './modules/bot/telegram/telegram.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AutomationModule } from './automation/automation.module';
+import { SocketModule } from './modules/socket/socket.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { AutomationModule } from './automation/automation.module';
     TelegramModule,
     AnalyticsModule,
     AutomationModule,
+    SocketModule,
   ],
   providers: [],
 })
