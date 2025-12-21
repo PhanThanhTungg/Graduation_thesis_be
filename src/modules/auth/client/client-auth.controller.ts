@@ -94,7 +94,13 @@ export class ClientAuthController {
   }
 
   @Post('logout')
-  logout(@Res({ passthrough: true }) res: Response): successResponse {
+  @UseGuards(AuthGuard('client-jwt'))
+  @ApiBearerAuth()
+  async logout(
+    @CurrentUser() user: currentClientUser,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<successResponse> {
+    await this.clientAuthService.updateLastLoginAt(user.id);
     res.clearCookie('client_refresh_token');
     return { message: 'Logged out successfully' };
   }

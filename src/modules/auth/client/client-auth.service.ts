@@ -500,4 +500,12 @@ export class ClientAuthService {
     const { passwordHash, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
+
+  async updateLastLoginAt(userId: string): Promise<void> {
+    console.log('Updating last login at for user', userId);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { lastLoginAt: new Date() },
+    });
+  }
 }

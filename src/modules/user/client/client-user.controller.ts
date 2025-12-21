@@ -83,4 +83,16 @@ export class ClientUserController {
       data: statusMap,
     };
   }
+
+  @Post('update-last-login')
+  @ApiOperation({ summary: 'Update last login time for current user' })
+  async updateLastLoginAt(
+    @CurrentUser() user: currentClientUser,
+  ): Promise<successResponse> {
+    await this.clientUserService.updateLastLoginAt(user.id);
+    return {
+      message: 'Last login updated successfully',
+      data: null,
+    };
+  }
 }
