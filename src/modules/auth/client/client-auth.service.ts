@@ -103,6 +103,11 @@ export class ClientAuthService {
       role: user.role,
     };
 
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
     const tokens = await this.jwtAuthService.generateTokenPair(payload);
 
     return {
@@ -352,7 +357,11 @@ export class ClientAuthService {
       });
     }
 
-    // Generate JWT tokens
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
     const jwtPayload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -413,7 +422,11 @@ export class ClientAuthService {
       });
     }
 
-    // Generate JWT tokens
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
     const jwtPayload: JwtPayload = {
       sub: user.id,
       email: user.email,

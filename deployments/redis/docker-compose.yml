@@ -1,0 +1,20 @@
+version: "3.9"
+services:
+    redis:
+      image: bitnami/redis:latest
+      container_name: akabis_redis
+      environment:
+        - ALLOW_EMPTY_PASSWORD=yes
+      ports:
+        - "${REDIS_PORT}:${REDIS_PORT}"
+      volumes:
+        - redis-data:/bitnami/redis/data
+      restart: always
+      networks:
+      - akabis_dev
+volumes:
+  redis-data:
+    driver: local
+networks:
+  akabis_dev:
+    driver: bridge

@@ -5,6 +5,7 @@ import {
   Max,
   Min,
   IsOptional,
+  IsNotEmpty,
 } from 'class-validator';
 
 enum Environment {
@@ -118,4 +119,9 @@ export class EnvSchema {
   // Telegram Bot Token
   @IsString()
   TELE_BOT_TOKEN: string;
+
+  // Redis
+  @IsString()
+  @IsNotEmpty()
+  REDIS_URI: string;
 }

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { EnvModule } from './shared/env/env.module';
 import { PrismaModule } from './shared/prisma/prisma.module';
+import { RedisModule } from './shared/redis/redis.module';
 import { EmailModule } from './shared/email/email.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ProfileModule } from './modules/profile/profile.module';
@@ -34,6 +35,7 @@ import { SocketModule } from './modules/socket/socket.module';
   imports: [
     EnvModule,
     PrismaModule,
+    RedisModule,
     EmailModule,
     LoggingModule,
     AuthModule,
