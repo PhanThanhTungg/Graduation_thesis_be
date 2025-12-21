@@ -16,6 +16,7 @@ import { AdminCourseModule } from './modules/course/admin/admin-course.module';
 import { AdminUserModule } from './modules/user/admin/admin-user.module';
 import { ClientUserModule } from './modules/user/client/client-user.module';
 import { ChatClientModule } from './modules/chat/client/chat-client.module';
+import { FriendsClientModule } from './modules/friends/client/friends-client.module';
 import { VoucherClientModule } from './modules/voucher/client/voucher-client.module';
 import { ReviewClientModule } from './modules/review/client/review-client.module';
 import { PaymentClientModule } from './modules/payment/client/payment-client.module';
@@ -50,6 +51,7 @@ import { SocketModule } from './modules/socket/socket.module';
     AdminUserModule,
     ClientUserModule,
     ChatClientModule,
+    FriendsClientModule,
     VoucherClientModule,
     ReviewClientModule,
     PaymentClientModule,
