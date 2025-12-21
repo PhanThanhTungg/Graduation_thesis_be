@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, UseGuards, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { successResponse } from 'src/common/interfaces/response.interface';
@@ -9,6 +17,7 @@ import { ChatClientService } from './chat-client.service';
 import { CreateOrGetConversationDto } from './dto/create-conversation.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { CreateGroupDto } from './dto/create-group.dto';
+import { RemoveMemberDto } from './dto/remove-member.dto';
 
 @ApiTags('Client Chat')
 @Controller('chat')
@@ -69,6 +78,32 @@ export class ChatClientController {
       currentUser.id,
       createGroupDto.name,
       createGroupDto.userIds,
+    );
+  }
+
+  @Get('conversation/:conversationId/members')
+  @ApiOperation({ summary: 'Get members of a conversation' })
+  async getConversationMembers(
+    @Param('conversationId') conversationId: string,
+    @CurrentUser() currentUser: currentClientUser,
+  ): Promise<successResponse> {
+    return this.chatClientService.getConversationMembers(
+      currentUser.id,
+      conversationId,
+    );
+  }
+
+  @Delete('conversation/:conversationId/member')
+  @ApiOperation({ summary: 'Remove a member from a group (admin only)' })
+  async removeMember(
+    @Param('conversationId') conversationId: string,
+    @Body() removeMemberDto: RemoveMemberDto,
+    @CurrentUser() currentUser: currentClientUser,
+  ): Promise<successResponse> {
+    return this.chatClientService.removeMember(
+      currentUser.id,
+      conversationId,
+      removeMemberDto.userId,
     );
   }
 }

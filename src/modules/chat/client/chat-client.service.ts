@@ -487,4 +487,126 @@ export class ChatClientService {
       },
     };
   }
+
+  async getConversationMembers(
+    currentUserId: string,
+    conversationId: string,
+  ): Promise<successResponse> {
+    const conversation = await this.prisma.conversation.findUnique({
+      where: {
+        id: conversationId,
+      },
+      include: {
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found');
+    }
+
+    const isMember = conversation.members.some(
+      (member) => member.userId === currentUserId,
+    );
+
+    if (!isMember) {
+      throw new ForbiddenException('You are not a member of this conversation');
+    }
+
+    const currentUserMember = conversation.members.find(
+      (member) => member.userId === currentUserId,
+    );
+
+    const transformedMembers = conversation.members.map((member) => ({
+      userId: member.userId,
+      role: member.role,
+      joinedAt: member.joinedAt,
+      user: {
+        id: member.user.id,
+        name: member.user.fullName,
+        avatar: member.user.avatarUrl,
+      },
+    }));
+
+    return {
+      message: 'Get conversation members successfully',
+      data: {
+        members: transformedMembers,
+        currentUserRole: currentUserMember?.role || null,
+      },
+    };
+  }
+
+  async removeMember(
+    currentUserId: string,
+    conversationId: string,
+    userIdToRemove: string,
+  ): Promise<successResponse> {
+    const conversation = await this.prisma.conversation.findUnique({
+      where: {
+        id: conversationId,
+      },
+      include: {
+        members: true,
+      },
+    });
+
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found');
+    }
+
+    if (!conversation.isGroup) {
+      throw new BadRequestException('This is not a group conversation');
+    }
+
+    const currentUserMember = conversation.members.find(
+      (member) => member.userId === currentUserId,
+    );
+
+    if (!currentUserMember) {
+      throw new ForbiddenException('You are not a member of this conversation');
+    }
+
+    if (currentUserMember.role !== ConversationMemberRole.admin) {
+      throw new ForbiddenException('Only admins can remove members');
+    }
+
+    const memberToRemove = conversation.members.find(
+      (member) => member.userId === userIdToRemove,
+    );
+
+    if (!memberToRemove) {
+      throw new NotFoundException('Member not found in this conversation');
+    }
+
+    if (userIdToRemove === currentUserId) {
+      throw new BadRequestException('You cannot remove yourself');
+    }
+
+    await this.prisma.conversationMember.delete({
+      where: {
+        conversationId_userId: {
+          conversationId,
+          userId: userIdToRemove,
+        },
+      },
+    });
+
+    return {
+      message: 'Member removed successfully',
+      data: {
+        removedUserId: userIdToRemove,
+      },
+    };
+  }
 }
