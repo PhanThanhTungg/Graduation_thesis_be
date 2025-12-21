@@ -162,6 +162,8 @@ model User {
   country       String          @db.VarChar(50)
   timezone      String?         @db.VarChar(100)
 
+  lastLoginAt   DateTime?       @map("last_login_at")
+
   teacherSetting          TeacherSetting?
   courses                 Course[]                 @relation("TeacherCourses")
   emailVerificationTokens EmailVerificationToken[]

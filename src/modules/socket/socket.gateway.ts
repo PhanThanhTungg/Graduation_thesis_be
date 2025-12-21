@@ -73,6 +73,26 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     };
   }
 
+  @SubscribeMessage('typing')
+  handleTyping(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      room: string;
+      conversationId: string;
+      userId: string;
+      userName: string;
+      userAvatar: string | null;
+    },
+  ) {
+    client.to(data.room).emit('typing', {
+      conversationId: data.conversationId,
+      userId: data.userId,
+      userName: data.userName,
+      userAvatar: data.userAvatar,
+    });
+  }
+
   emitToRoom(room: string, event: string, data: any) {
     this.server.to(room).emit(event, data);
   }
