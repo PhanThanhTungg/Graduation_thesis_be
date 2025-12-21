@@ -47,6 +47,32 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     };
   }
 
+  @SubscribeMessage('joinRoom')
+  handleJoinRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() room: string,
+  ) {
+    client.join(room);
+    this.logger.log(`Client ${client.id} joined room: ${room}`);
+    return {
+      event: 'joinedRoom',
+      data: { room, message: `Joined room: ${room}` },
+    };
+  }
+
+  @SubscribeMessage('leaveRoom')
+  handleLeaveRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() room: string,
+  ) {
+    client.leave(room);
+    this.logger.log(`Client ${client.id} left room: ${room}`);
+    return {
+      event: 'leftRoom',
+      data: { room, message: `Left room: ${room}` },
+    };
+  }
+
   emitToRoom(room: string, event: string, data: any) {
     this.server.to(room).emit(event, data);
   }

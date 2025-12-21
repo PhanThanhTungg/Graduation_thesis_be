@@ -5,11 +5,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
+import { SocketChatService } from '../../socket/socket-chat.service';
 import { successResponse } from 'src/common/interfaces/response.interface';
 
 @Injectable()
 export class ChatClientService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly socketChatService: SocketChatService,
+  ) {}
 
   async createOrGetConversation(
     currentUserId: string,
@@ -206,21 +210,37 @@ export class ChatClientService {
       },
     });
 
-    return {
-      message: 'Message sent successfully',
-      data: {
+    const messageData = {
+      id: newMessage.id,
+      conversationId: newMessage.conversationId,
+      message: newMessage.message,
+      senderId: newMessage.senderId,
+      sender: {
+        id: newMessage.sender.id,
+        name: newMessage.sender.fullName,
+        avatar: newMessage.sender.avatarUrl,
+      },
+      createdAt: newMessage.createdAt,
+      updatedAt: newMessage.updatedAt,
+    };
+
+    this.socketChatService.emitNewMessage(conversationId, messageData);
+
+    this.socketChatService.emitConversationUpdated(
+      conversationId,
+      {
         id: newMessage.id,
-        conversationId: newMessage.conversationId,
         message: newMessage.message,
         senderId: newMessage.senderId,
-        sender: {
-          id: newMessage.sender.id,
-          name: newMessage.sender.fullName,
-          avatar: newMessage.sender.avatarUrl,
-        },
+        senderName: newMessage.sender.fullName,
         createdAt: newMessage.createdAt,
-        updatedAt: newMessage.updatedAt,
       },
+      newMessage.createdAt,
+    );
+
+    return {
+      message: 'Message sent successfully',
+      data: messageData,
     };
   }
 
