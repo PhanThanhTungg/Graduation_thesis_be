@@ -92,7 +92,7 @@ export class PaymentClientService {
         completedAt: new Date(),
       });
 
-      await this.incrementCounters(orderRecord);
+      await this.incrementCounters(orderRecord, currentUser.id);
 
       const response: successResponse = {
         message: 'Checkout completed without payment',
@@ -172,6 +172,7 @@ export class PaymentClientService {
         course: {
           select: {
             teacherId: true,
+            conversationId: true,
           },
         },
       },
@@ -245,6 +246,27 @@ export class PaymentClientService {
           where: { id: order.voucherId },
           data: { usedCount: { increment: 1 } },
         });
+      }
+
+      if (order.course.conversationId) {
+        const existingMember = await tx.conversationMember.findUnique({
+          where: {
+            conversationId_userId: {
+              conversationId: order.course.conversationId,
+              userId: order.userId,
+            },
+          },
+        });
+
+        if (!existingMember) {
+          await tx.conversationMember.create({
+            data: {
+              conversationId: order.course.conversationId,
+              userId: order.userId,
+              role: 'member',
+            },
+          });
+        }
       }
     });
 
@@ -349,21 +371,52 @@ export class PaymentClientService {
     return voucher;
   }
 
-  private async incrementCounters(order: {
-    courseId: string;
-    voucherId?: string | null;
-    id: string;
-  }) {
-    await this.prisma.course.update({
+  private async incrementCounters(
+    order: {
+      courseId: string;
+      voucherId?: string | null;
+      id: string;
+    },
+    userId: string,
+  ) {
+    const course = await this.prisma.course.findUnique({
       where: { id: order.courseId },
-      data: { countStudent: { increment: 1 } },
+      select: { conversationId: true },
     });
 
-    if (order.voucherId) {
-      await this.prisma.voucher.update({
-        where: { id: order.voucherId },
-        data: { usedCount: { increment: 1 } },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.course.update({
+        where: { id: order.courseId },
+        data: { countStudent: { increment: 1 } },
       });
-    }
+
+      if (order.voucherId) {
+        await tx.voucher.update({
+          where: { id: order.voucherId },
+          data: { usedCount: { increment: 1 } },
+        });
+      }
+
+      if (course?.conversationId) {
+        const existingMember = await tx.conversationMember.findUnique({
+          where: {
+            conversationId_userId: {
+              conversationId: course.conversationId,
+              userId: userId,
+            },
+          },
+        });
+
+        if (!existingMember) {
+          await tx.conversationMember.create({
+            data: {
+              conversationId: course.conversationId,
+              userId: userId,
+              role: 'member',
+            },
+          });
+        }
+      }
+    });
   }
 }

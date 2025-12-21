@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { SocketChatService } from '../../socket/socket-chat.service';
 import { successResponse } from 'src/common/interfaces/response.interface';
+import { ConversationMemberRole } from '@prisma/client';
 
 @Injectable()
 export class ChatClientService {
@@ -392,6 +393,98 @@ export class ChatClientService {
     return {
       message: 'Get messages successfully',
       data: transformedMessages,
+    };
+  }
+
+  async createGroup(
+    currentUserId: string,
+    name: string,
+    userIds: string[],
+  ): Promise<successResponse> {
+    if (!name || name.trim().length === 0) {
+      throw new BadRequestException('Group name is required');
+    }
+
+    if (name.length > 50) {
+      throw new BadRequestException(
+        'Group name must be less than 50 characters',
+      );
+    }
+
+    if (!userIds || userIds.length === 0) {
+      throw new BadRequestException('At least one member must be added');
+    }
+
+    const uniqueUserIds = [...new Set(userIds)];
+    if (uniqueUserIds.includes(currentUserId)) {
+      throw new BadRequestException('Cannot add yourself to the group');
+    }
+
+    if (uniqueUserIds.length !== userIds.length) {
+      throw new BadRequestException('Duplicate user IDs are not allowed');
+    }
+
+    const users = await this.prisma.user.findMany({
+      where: {
+        id: {
+          in: uniqueUserIds,
+        },
+        deletedAt: null,
+        status: 'active',
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (users.length !== uniqueUserIds.length) {
+      throw new BadRequestException('One or more users not found');
+    }
+
+    const conversation = await this.prisma.conversation.create({
+      data: {
+        name: name.trim(),
+        isGroup: true,
+        members: {
+          createMany: {
+            data: [
+              {
+                userId: currentUserId,
+                role: ConversationMemberRole.admin,
+              },
+              ...uniqueUserIds.map((userId) => ({
+                userId,
+                role: ConversationMemberRole.member,
+              })),
+            ],
+          },
+        },
+      },
+      include: {
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      message: 'Group created successfully',
+      data: {
+        id: conversation.id,
+        name: conversation.name,
+        isGroup: true,
+        memberCount: conversation.members.length,
+        createdAt: conversation.createdAt,
+        updatedAt: conversation.updatedAt,
+      },
     };
   }
 }

@@ -8,6 +8,7 @@ import { ClientRoleGuard } from 'src/common/guards/client-role.guard';
 import { ChatClientService } from './chat-client.service';
 import { CreateOrGetConversationDto } from './dto/create-conversation.dto';
 import { SendMessageDto } from './dto/send-message.dto';
+import { CreateGroupDto } from './dto/create-group.dto';
 
 @ApiTags('Client Chat')
 @Controller('chat')
@@ -56,5 +57,18 @@ export class ChatClientController {
     @Param('conversationId') conversationId: string,
   ): Promise<successResponse> {
     return this.chatClientService.getMessages(currentUser.id, conversationId);
+  }
+
+  @Post('group')
+  @ApiOperation({ summary: 'Create a new group conversation' })
+  async createGroup(
+    @Body() createGroupDto: CreateGroupDto,
+    @CurrentUser() currentUser: currentClientUser,
+  ): Promise<successResponse> {
+    return this.chatClientService.createGroup(
+      currentUser.id,
+      createGroupDto.name,
+      createGroupDto.userIds,
+    );
   }
 }
