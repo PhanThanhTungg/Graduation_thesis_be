@@ -6,7 +6,7 @@ import {
 import { GeminiService } from 'src/shared/AI/gemini/gemini.service';
 import { LoggingService } from 'src/shared/logging/logging.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { GenerateQuestionsDto, Model } from './dto/generate.dto';
+import { GenerateQuestionsDto } from './dto/generate.dto';
 import genQuestionPrompt from 'src/shared/AI/prompt/question/genQuestion.prompt';
 import { successResponse } from 'src/common/interfaces/response.interface';
 import { GroqService } from 'src/shared/AI/groq/groq.service';
@@ -15,7 +15,7 @@ import { AnswerQuestionDto } from './dto/answer-question.dto';
 import { answerQuestionPrompt } from 'src/shared/AI/prompt/question/answer.prompt';
 import { QuestionHistoryQueryDto } from './dto/question-history-query.dto';
 import { AdminSettingService } from 'src/modules/setting/admin/admin-setting.service';
-import { LessonReviewStatus } from '@prisma/client';
+import { AiModel, LessonReviewStatus, Question } from '@prisma/client';
 import { transformScore } from 'src/helpers/question.helper';
 
 @Injectable()
@@ -24,7 +24,6 @@ export class QuestionService {
     private readonly prisma: PrismaService,
     private readonly geminiService: GeminiService,
     private readonly groqService: GroqService,
-    private readonly loggingService: LoggingService,
     private readonly adminSettingService: AdminSettingService,
   ) {}
 
@@ -52,6 +51,7 @@ export class QuestionService {
     const unansweredQuestions = await this.getUnansweredQuestion(
       lessonSlug,
       userId,
+      dto.isForReview,
     );
     if (unansweredQuestions.data) {
       throw new BadRequestException('You have already answered question');
@@ -65,7 +65,7 @@ export class QuestionService {
     let questions, dataRes;
 
     switch (dto.model) {
-      case Model.GROQ:
+      case AiModel.groq:
         questions = await this.groqService.generateContent({
           prompt,
           // files: files.length > 0 ? files : undefined,
@@ -77,7 +77,7 @@ export class QuestionService {
             .trim(),
         );
         break;
-      case Model.GEMINI: {
+      case AiModel.gemini: {
         const files = await Promise.all(
           lesson.files.map(async (file) => {
             const fileData = await fileUtils.fetchFileAsBase64(file.fileUrl);
@@ -114,6 +114,7 @@ export class QuestionService {
             difficulty: dto.difficulty,
             lessonId: lesson.id,
             userId,
+            isForReview: dto.isForReview,
           },
         }),
       ),
@@ -139,12 +140,12 @@ export class QuestionService {
 
     let aiResponse;
     switch (body.model) {
-      case Model.GROQ:
+      case AiModel.groq:
         aiResponse = await this.groqService.generateContent({
           prompt,
         });
         break;
-      case Model.GEMINI:
+      case AiModel.gemini:
         aiResponse = await this.geminiService.generateContent({
           prompt,
         });
@@ -152,8 +153,12 @@ export class QuestionService {
       default:
         throw new BadRequestException('Invalid model');
     }
+    console.log('aiResponse:', aiResponse.text);
     aiResponse = JSON.parse(
-      aiResponse.text.replace('```json', '').replace('```', ''),
+      aiResponse.text
+        .replace(/```json/g, '')
+        .replace(/```/g, '')
+        .trim(),
     );
 
     const updatedQuestion = await this.prisma.question.update({
@@ -173,7 +178,7 @@ export class QuestionService {
     return response;
   }
 
-  private async getQuestion(questionId: string, userId: string) {
+  async getQuestion(questionId: string, userId: string): Promise<Question> {
     const question = await this.prisma.question.findUnique({
       where: { id: questionId },
       include: {
@@ -262,7 +267,11 @@ export class QuestionService {
     return response;
   }
 
-  async getUnansweredQuestion(lessonSlug: string, userId: string) {
+  async getUnansweredQuestion(
+    lessonSlug: string,
+    userId: string,
+    isForReview: boolean = false,
+  ) {
     const lesson = await this.prisma.lesson.findFirst({
       where: { slug: lessonSlug },
     });
@@ -274,6 +283,7 @@ export class QuestionService {
         lessonId: lesson.id,
         userId,
         answer: null,
+        isForReview,
       },
       orderBy: {
         createdAt: 'asc',

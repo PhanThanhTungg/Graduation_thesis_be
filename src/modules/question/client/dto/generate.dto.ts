@@ -1,11 +1,13 @@
-import { IsEnum, IsInt, IsString, Min } from 'class-validator';
-import { Difficulty, TypeQuestion } from '@prisma/client';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
+import { AiModel, Difficulty, TypeQuestion } from '@prisma/client';
 import { ApiProperty } from '@nestjs/swagger';
-
-export enum Model {
-  GROQ = 'groq',
-  GEMINI = 'gemini',
-}
 
 export class GenerateQuestionsDto {
   @ApiProperty({ description: 'The type of question', enum: TypeQuestion })
@@ -23,9 +25,17 @@ export class GenerateQuestionsDto {
 
   @ApiProperty({
     description: 'The model of AI',
-    enum: Model,
-    default: Model.GROQ,
+    enum: AiModel,
+    default: AiModel.groq,
   })
-  @IsEnum(Model)
-  model: Model = Model.GROQ;
+  @IsEnum(AiModel)
+  model: AiModel = AiModel.groq;
+
+  @ApiProperty({
+    description: 'Is for review',
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isForReview?: boolean = false;
 }

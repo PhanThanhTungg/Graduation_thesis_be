@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNotEmpty } from 'class-validator';
-import { Model } from './generate.dto';
+import { AiModel } from '@prisma/client';
 
 export class AnswerQuestionDto {
   @IsNotEmpty({ message: 'Answer is required' })
@@ -12,9 +12,9 @@ export class AnswerQuestionDto {
 
   @ApiProperty({
     description: 'Model of AI',
-    enum: Model,
-    default: Model.GROQ,
+    enum: AiModel,
+    default: AiModel.groq,
   })
-  @IsEnum(Model)
-  model: Model;
+  @IsEnum(AiModel)
+  model: AiModel;
 }

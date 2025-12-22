@@ -346,7 +346,7 @@ model LessonReviewSetting {
   status         LessonReviewStatus @default(new) @map("status")
   reviewStep     Int                @default(1) @map("review_step") // Bước ôn tập hiện tại
   lapsed         Int                @default(0) // Số lần ther bij trả lời sai khi đang ở reviewing
-  lastReviewedAt DateTime?          @map("last_reviewed_at")
+  lastReviewedAt DateTime?          @map("last_reviewed_at") @db.Timestamptz
 
   note       String?      @map("note")
   difficulty Difficulty   @default(medium) @map("difficulty")
