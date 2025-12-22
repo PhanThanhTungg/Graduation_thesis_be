@@ -60,6 +60,7 @@ export class ReviewSpaceService {
     userId: string,
     page: number = 1,
     limit: number = 10,
+    search?: string,
   ): Promise<{
     data: LessonReviewSettingDto[];
     pagination: {
@@ -71,11 +72,41 @@ export class ReviewSpaceService {
   }> {
     const skip = (page - 1) * limit;
 
+    const searchFilter = search?.trim()
+      ? {
+          OR: [
+            {
+              lesson: {
+                title: {
+                  contains: search.trim(),
+                  mode: 'insensitive' as const,
+                },
+              },
+            },
+            {
+              lesson: {
+                chapter: {
+                  course: {
+                    title: {
+                      contains: search.trim(),
+                      mode: 'insensitive' as const,
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        }
+      : {};
+
+    const whereClause = {
+      userId,
+      ...searchFilter,
+    };
+
     const [reviewSettings, total] = await Promise.all([
       this.prisma.lessonReviewSetting.findMany({
-        where: {
-          userId,
-        },
+        where: whereClause,
         include: {
           lesson: {
             include: {
@@ -94,9 +125,7 @@ export class ReviewSpaceService {
         take: limit,
       }),
       this.prisma.lessonReviewSetting.count({
-        where: {
-          userId,
-        },
+        where: whereClause,
       }),
     ]);
 

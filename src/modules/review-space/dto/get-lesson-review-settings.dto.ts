@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Min } from 'class-validator';
+import { IsInt, IsOptional, Min, IsString } from 'class-validator';
 
 export class GetLessonReviewSettingsDto {
   @ApiProperty({ required: false, default: 1 })
@@ -16,4 +16,9 @@ export class GetLessonReviewSettingsDto {
   @IsInt()
   @Min(1)
   limit?: number = 10;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  search?: string;
 }

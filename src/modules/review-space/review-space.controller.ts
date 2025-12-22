@@ -40,6 +40,7 @@ export class ReviewSpaceController {
       user.id,
       query.page,
       query.limit,
+      query.search,
     );
   }
 
