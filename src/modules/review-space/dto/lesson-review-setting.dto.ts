@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Difficulty, LessonReviewStatus } from '@prisma/client';
+import { Difficulty, LessonReviewStatus, TypeQuestion } from '@prisma/client';
 
 export class LessonReviewSettingDto {
   @ApiProperty()
@@ -31,6 +31,9 @@ export class LessonReviewSettingDto {
 
   @ApiProperty({ enum: Difficulty })
   difficulty: Difficulty;
+
+  @ApiProperty({ enum: TypeQuestion })
+  typeQues: TypeQuestion;
 
   @ApiProperty()
   userId: string;

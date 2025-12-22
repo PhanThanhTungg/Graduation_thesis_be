@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsEnum } from 'class-validator';
+import { Difficulty, TypeQuestion } from '@prisma/client';
 
 export class UpdateLessonReviewSettingDto {
   @ApiPropertyOptional({
@@ -17,4 +18,22 @@ export class UpdateLessonReviewSettingDto {
   @IsOptional()
   @IsString()
   note?: string;
+
+  @ApiPropertyOptional({
+    description: 'Difficulty level',
+    enum: Difficulty,
+    example: 'medium',
+  })
+  @IsOptional()
+  @IsEnum(Difficulty)
+  difficulty?: Difficulty;
+
+  @ApiPropertyOptional({
+    description: 'Question type',
+    enum: TypeQuestion,
+    example: 'single_choice',
+  })
+  @IsOptional()
+  @IsEnum(TypeQuestion)
+  typeQues?: TypeQuestion;
 }

@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Difficulty, TypeQuestion } from '@prisma/client';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { LessonService } from '../lesson/client/lesson-client.service';
 import { successResponse } from 'src/common/interfaces/response.interface';
@@ -110,6 +111,7 @@ export class ReviewSpaceService {
       lastReviewedAt: setting.lastReviewedAt,
       note: setting.note,
       difficulty: setting.difficulty,
+      typeQues: setting.typeQues,
       userId: setting.userId,
       lessonId: setting.lessonId,
       lessonTitle: setting.lesson.title,
@@ -169,6 +171,7 @@ export class ReviewSpaceService {
       lastReviewedAt: reviewSetting.lastReviewedAt,
       note: reviewSetting.note,
       difficulty: reviewSetting.difficulty,
+      typeQues: reviewSetting.typeQues,
       userId: reviewSetting.userId,
       lessonId: reviewSetting.lessonId,
       lessonTitle: reviewSetting.lesson.title,
@@ -184,7 +187,12 @@ export class ReviewSpaceService {
   async updateLessonReviewSetting(
     lessonId: string,
     userId: string,
-    updateDto: { reviewEnabled?: boolean; note?: string },
+    updateDto: {
+      reviewEnabled?: boolean;
+      note?: string;
+      difficulty?: Difficulty;
+      typeQues?: TypeQuestion;
+    },
   ): Promise<LessonReviewSettingDto> {
     const reviewSetting = await this.prisma.lessonReviewSetting.findFirst({
       where: {
@@ -197,12 +205,23 @@ export class ReviewSpaceService {
       throw new NotFoundException('Lesson review setting not found');
     }
 
-    const updateData: { reviewEnabled?: boolean; note?: string } = {};
+    const updateData: {
+      reviewEnabled?: boolean;
+      note?: string;
+      difficulty?: Difficulty;
+      typeQues?: TypeQuestion;
+    } = {};
     if (updateDto.reviewEnabled !== undefined) {
       updateData.reviewEnabled = updateDto.reviewEnabled;
     }
     if (updateDto.note !== undefined) {
       updateData.note = updateDto.note;
+    }
+    if (updateDto.difficulty !== undefined) {
+      updateData.difficulty = updateDto.difficulty;
+    }
+    if (updateDto.typeQues !== undefined) {
+      updateData.typeQues = updateDto.typeQues;
     }
 
     const updatedSetting = await this.prisma.lessonReviewSetting.update({
@@ -234,6 +253,7 @@ export class ReviewSpaceService {
       lastReviewedAt: updatedSetting.lastReviewedAt,
       note: updatedSetting.note,
       difficulty: updatedSetting.difficulty,
+      typeQues: updatedSetting.typeQues,
       userId: updatedSetting.userId,
       lessonId: updatedSetting.lessonId,
       lessonTitle: updatedSetting.lesson.title,

@@ -44,16 +44,10 @@ export class SpaceRepetitionJob {
 
     for (const student of dueStudents) {
       if (!student.lastActiveDate) {
-        await this.prisma.studentSetting.update({
-          where: {
-            userId: student.userId,
-          },
-          data: {
-            lastActiveDate: new Date(),
-          },
-        });
+        await this.updateLastActiveDate(student.userId);
         continue;
       }
+
       const [firstDue] = await this.prisma.$queryRaw<
         {
           id: string;
@@ -87,7 +81,7 @@ export class SpaceRepetitionJob {
           AND lrs."review_enabled" = true
           AND (
             lrs."last_reviewed_at" IS NULL
-            OR lrs."last_reviewed_at" + lrs."interval" * INTERVAL '1 minute' <= NOW()
+            OR lrs."last_reviewed_at" + lrs."interval" * INTERVAL '1 second' <= NOW()
           )
         ORDER BY
           CASE WHEN lrs."last_reviewed_at" IS NULL THEN 0 ELSE 1 END,
@@ -104,12 +98,10 @@ export class SpaceRepetitionJob {
           answer: null,
         },
       });
-
-      if (
-        unAnsweredQuestion &&
-        new Date().getTime() - new Date(student.lastActiveDate).getTime() >
-          24 * 60 * 60 * 1000
-      ) {
+      if (unAnsweredQuestion) {
+        const spaceTime =
+          new Date().getTime() - new Date(student.lastActiveDate).getTime();
+        if (spaceTime < 24 * 60 * 60 * 1000) continue;
         const formattedQuestion = formatQuestionForTelegram({
           type: unAnsweredQuestion.type,
           statement: unAnsweredQuestion.statement,
@@ -120,27 +112,20 @@ export class SpaceRepetitionJob {
             `<b>Question (${unAnsweredQuestion.type}):</b>\n${formattedQuestion}\n\n<code>${unAnsweredQuestion.id}</code>`,
           );
         }
+        await this.updateLastActiveDate(student.userId);
+        continue;
       }
-
-      // const question = await this.prisma.question.findFirst({
-      //   where: {
-      //     lessonId: firstDue.lessonId,
-      //     userId: student.userId,
-      //     answer: null,
-      //   },
-      //   orderBy: {
-      //     createdAt: 'asc',
-      //   },
-      // });
-
-      // if (!question) {
-      //   continue;
-      // }
-
-      // await this.telegramService.sendMessage(
-      //   student.telegramId as string,
-      //   `<b>Question:</b>\n${question.statement}\n\n<code>${question.id}</code>`,
-      // );
     }
+  }
+
+  private async updateLastActiveDate(userId: string) {
+    await this.prisma.studentSetting.update({
+      where: {
+        userId: userId,
+      },
+      data: {
+        lastActiveDate: new Date(),
+      },
+    });
   }
 }
