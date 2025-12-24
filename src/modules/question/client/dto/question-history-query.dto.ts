@@ -1,4 +1,11 @@
-import { IsOptional, IsInt, Min, IsEnum, IsString } from 'class-validator';
+import {
+  IsOptional,
+  IsInt,
+  Min,
+  IsEnum,
+  IsString,
+  IsBoolean,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -36,6 +43,12 @@ export class QuestionHistoryQueryDto {
   @IsOptional()
   @IsString()
   difficulty?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  isForReview?: boolean;
 
   @ApiProperty({
     required: false,

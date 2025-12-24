@@ -216,6 +216,10 @@ export class QuestionService {
       where.difficulty = query.difficulty;
     }
 
+    if (query.isForReview !== undefined) {
+      where.isForReview = query.isForReview;
+    }
+
     // Count total items
     const totalItems = await this.prisma.question.count({ where });
 
