@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 import { successResponse } from 'src/common/interfaces/response.interface';
@@ -156,9 +160,7 @@ export class AnalyticsClientService {
     const totalFees = totalRevenue * 0.1; // Assuming 10% platform fee
     const previousFees = previousRevenue * 0.1;
     const feesChange =
-      previousFees > 0
-        ? ((totalFees - previousFees) / previousFees) * 100
-        : 0;
+      previousFees > 0 ? ((totalFees - previousFees) / previousFees) * 100 : 0;
 
     const response: successResponse = {
       message: 'Get current analytics successfully',
@@ -182,7 +184,10 @@ export class AnalyticsClientService {
           totalCourses: teacherCourses.length,
           totalLessons,
           totalReviews,
-          totalStudents: teacherCourses.reduce((sum, c) => sum + c.countStudent, 0),
+          totalStudents: teacherCourses.reduce(
+            (sum, c) => sum + c.countStudent,
+            0,
+          ),
         },
       },
     };
@@ -287,7 +292,12 @@ export class AnalyticsClientService {
     });
 
     // Group orders by date
-    const chartData: { date: string; orders: number; revenue: number; profit: number }[] = [];
+    const chartData: {
+      date: string;
+      orders: number;
+      revenue: number;
+      profit: number;
+    }[] = [];
     const dateMap = new Map<string, { orders: number; revenue: number }>();
 
     orders.forEach((order) => {
@@ -299,7 +309,11 @@ export class AnalyticsClientService {
     });
 
     // Fill in all dates in range
-    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    for (
+      let d = new Date(startDate);
+      d <= endDate;
+      d.setDate(d.getDate() + 1)
+    ) {
       const dateStr = d.toISOString().split('T')[0];
       const data = dateMap.get(dateStr) || { orders: 0, revenue: 0 };
       // Calculate profit as revenue minus platform fee (assume 10% platform fee)
@@ -587,10 +601,7 @@ export class AnalyticsClientService {
     });
 
     // Group reviews by date
-    const dateMap = new Map<
-      string,
-      { ratings: number[]; count: number }
-    >();
+    const dateMap = new Map<string, { ratings: number[]; count: number }>();
 
     reviews.forEach((review) => {
       const dateStr = review.createdAt.toISOString().split('T')[0];
@@ -604,7 +615,11 @@ export class AnalyticsClientService {
     const chartData: { date: string; rating: number; reviews: number }[] = [];
     let cumulativeRating = course.rating;
 
-    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    for (
+      let d = new Date(startDate);
+      d <= endDate;
+      d.setDate(d.getDate() + 1)
+    ) {
       const dateStr = d.toISOString().split('T')[0];
       const data = dateMap.get(dateStr);
 

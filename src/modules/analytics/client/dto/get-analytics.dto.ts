@@ -1,9 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsDateString, IsString, IsNotEmpty } from 'class-validator';
+import {
+  IsOptional,
+  IsDateString,
+  IsString,
+  IsNotEmpty,
+} from 'class-validator';
 
 export class GetAnalyticsDto {
   @ApiPropertyOptional({
-    description: 'The date to get analytics for (YYYY-MM-DD). Defaults to today',
+    description:
+      'The date to get analytics for (YYYY-MM-DD). Defaults to today',
   })
   @IsOptional()
   @IsDateString()

@@ -1,6 +1,22 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { LessonService } from './lesson-client.service';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { UniversalAuthGuard } from 'src/common/guards/universal-auth.guard';
 import { UserRole } from 'src/common/enums/common.enum';
 import {
@@ -9,7 +25,11 @@ import {
 } from 'src/common/guards/client-role.guard';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
-import { CreateLessonDto, UpdateLessonDto, UpdateLessonProgressDto } from './dto/lesson.dto';
+import {
+  CreateLessonDto,
+  UpdateLessonDto,
+  UpdateLessonProgressDto,
+} from './dto/lesson.dto';
 import { fullObjectFilter } from 'src/common/interfaces/objectFilter.interface';
 
 @Controller('lesson')
@@ -18,9 +38,23 @@ import { fullObjectFilter } from 'src/common/interfaces/objectFilter.interface';
 @UseGuards(UniversalAuthGuard, ClientRoleGuard)
 export class LessonController {
   constructor(private readonly lessonService: LessonService) {}
-  
 
-  // route for student
+  // I) ROUTES FOR STUDENT
+
+  // 1.1) common routes
+
+  @Get('/:lessonSlug')
+  @ApiBearerAuth()
+  @ClientRoles(UserRole.student)
+  @ApiOperation({ summary: 'Get lesson by slug (student)' })
+  @ApiParam({ name: 'lessonSlug', type: String, required: true })
+  async getLessonBySlugForStudent(
+    @Param('lessonSlug') lessonSlug: string,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.lessonService.getLessonBySlugForStudent(lessonSlug, user.id);
+  }
+
   @Get('/lesson-chapter-tree/:courseSlug')
   @ApiBearerAuth()
   @ClientRoles(UserRole.student)
@@ -36,25 +70,15 @@ export class LessonController {
   @Get('/next-by-course/:courseSlug')
   @ApiBearerAuth()
   @ClientRoles(UserRole.student)
-  @ApiOperation({ summary: 'Get next lesson slug by course slug for current student' })
+  @ApiOperation({
+    summary: 'Get next lesson slug by course slug for current student',
+  })
   @ApiParam({ name: 'courseSlug', type: String, required: true })
   async getNextLessonByCourseSlug(
     @Param('courseSlug') courseSlug: string,
     @CurrentUser() user: currentClientUser,
   ) {
     return this.lessonService.getNextLessonByCourseSlug(courseSlug, user.id);
-  }
-
-  @Get('/:lessonSlug')
-  @ApiBearerAuth()
-  @ClientRoles(UserRole.student)
-  @ApiOperation({ summary: 'Get lesson by slug (student)' })
-  @ApiParam({ name: 'lessonSlug', type: String, required: true })
-  async getLessonBySlugForStudent(
-    @Param('lessonSlug') lessonSlug: string,
-    @CurrentUser() user: currentClientUser,
-  ) {
-    return this.lessonService.getLessonBySlugForStudent(lessonSlug, user.id);
   }
 
   @Post('/ping/status-lesson/:lessonSlug')
@@ -67,10 +91,19 @@ export class LessonController {
     @Body() dto: UpdateLessonProgressDto,
     @CurrentUser() user: currentClientUser,
   ) {
-    return this.lessonService.pingStatusLesson(lessonSlug, dto.progress, user.id);
+    return this.lessonService.pingStatusLesson(
+      lessonSlug,
+      dto.progress,
+      user.id,
+    );
   }
 
-  // route for teacher
+  // 1.2) routes for quesions
+
+  // II) ROUTES FOR TEACHER
+
+  // 2.1) common routes
+
   @Post('/teacher-area/chapter/:chapterId')
   @ApiBearerAuth()
   @ClientRoles(UserRole.teacher)
@@ -87,10 +120,18 @@ export class LessonController {
   @Get('/teacher-area/chapter/:chapterId')
   @ApiBearerAuth()
   @ClientRoles(UserRole.teacher)
-  @ApiOperation({ summary: 'Get lessons by chapter id (teacher area) with filter, sort, pagination' })
+  @ApiOperation({
+    summary:
+      'Get lessons by chapter id (teacher area) with filter, sort, pagination',
+  })
   @ApiParam({ name: 'chapterId', type: String, required: true })
   @ApiQuery({ name: 'keySearch', type: String, required: false })
-  @ApiQuery({ name: 'type', type: String, required: false, enum: ['video', 'theory', 'exercise'] })
+  @ApiQuery({
+    name: 'type',
+    type: String,
+    required: false,
+    enum: ['video', 'theory', 'exercise'],
+  })
   @ApiQuery({ name: 'sortField', type: String, required: false })
   @ApiQuery({ name: 'sortOrder', type: String, required: false })
   @ApiQuery({ name: 'page', type: Number, required: false })
@@ -140,4 +181,3 @@ export class LessonController {
     return this.lessonService.deleteLesson(lessonId, user.id);
   }
 }
-

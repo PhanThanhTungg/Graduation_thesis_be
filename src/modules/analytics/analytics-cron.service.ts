@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { CronJob } from 'cron';
 
@@ -48,7 +53,7 @@ export class AnalyticsCronService implements OnModuleInit, OnModuleDestroy {
   onModuleInit() {
     this.initializeCronJobs();
   }
-  
+
   onModuleDestroy() {
     // Stop all cron jobs when module is destroyed
     this.cronJobs.forEach((job, timezone) => {
@@ -296,7 +301,10 @@ export class AnalyticsCronService implements OnModuleInit, OnModuleDestroy {
           avgRating: Math.round(avgRating * 100) / 100,
           ratingChange: 0,
           totalOrders: currentOrders._count.id,
-          totalUsers: teacherCourses.reduce((sum, c) => sum + c.countStudent, 0),
+          totalUsers: teacherCourses.reduce(
+            (sum, c) => sum + c.countStudent,
+            0,
+          ),
           totalCourses: teacherCourses.length,
           totalLessons,
           totalReviews,
@@ -317,7 +325,10 @@ export class AnalyticsCronService implements OnModuleInit, OnModuleDestroy {
           avgRating: Math.round(avgRating * 100) / 100,
           ratingChange: 0,
           totalOrders: currentOrders._count.id,
-          totalUsers: teacherCourses.reduce((sum, c) => sum + c.countStudent, 0),
+          totalUsers: teacherCourses.reduce(
+            (sum, c) => sum + c.countStudent,
+            0,
+          ),
           totalCourses: teacherCourses.length,
           totalLessons,
           totalReviews,

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { EnvModule } from './shared/env/env.module';
 import { PrismaModule } from './shared/prisma/prisma.module';
+import { RedisModule } from './shared/redis/redis.module';
 import { EmailModule } from './shared/email/email.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ProfileModule } from './modules/profile/profile.module';
@@ -13,18 +14,29 @@ import { ClientCategoryModule } from './modules/category/client/client-category.
 import { LessonClientModule } from './modules/lesson/client/lesson-client.module';
 import { AdminCourseModule } from './modules/course/admin/admin-course.module';
 import { AdminUserModule } from './modules/user/admin/admin-user.module';
+import { ClientUserModule } from './modules/user/client/client-user.module';
+import { ChatClientModule } from './modules/chat/client/chat-client.module';
+import { FriendsClientModule } from './modules/friends/client/friends-client.module';
 import { VoucherClientModule } from './modules/voucher/client/voucher-client.module';
 import { ReviewClientModule } from './modules/review/client/review-client.module';
 import { PaymentClientModule } from './modules/payment/client/payment-client.module';
 import { NoteClientModule } from './modules/note/client/note-client.module';
 import { StudentModule } from './modules/student/client/student.module';
 import { FinanceClientModule } from './modules/finance/client/finance-client.module';
+import { QuestionModule } from './modules/question/client/question-client.module';
+import { ReviewSpaceModule } from './modules/review-space/review-space.module';
+import { ClientSettingModule } from './modules/setting/client/client-setting.module';
+import { AdminSettingModule } from './modules/setting/admin/admin-setting.module';
+import { TelegramModule } from './modules/bot/telegram/telegram.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { AutomationModule } from './automation/automation.module';
+import { SocketModule } from './modules/socket/socket.module';
 
 @Module({
   imports: [
     EnvModule,
     PrismaModule,
+    RedisModule,
     EmailModule,
     LoggingModule,
     AuthModule,
@@ -37,13 +49,23 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     ClientCategoryModule,
     LessonClientModule,
     AdminUserModule,
+    ClientUserModule,
+    ChatClientModule,
+    FriendsClientModule,
     VoucherClientModule,
     ReviewClientModule,
     PaymentClientModule,
     NoteClientModule,
     StudentModule,
     FinanceClientModule,
+    QuestionModule,
+    ReviewSpaceModule,
+    ClientSettingModule,
+    AdminSettingModule,
+    TelegramModule,
     AnalyticsModule,
+    AutomationModule,
+    SocketModule,
   ],
   providers: [],
 })

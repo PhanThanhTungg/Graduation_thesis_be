@@ -1,10 +1,6 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { AnalyticsClientService } from './analytics-client.service';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UniversalAuthGuard } from 'src/common/guards/universal-auth.guard';
 import {
   ClientRoleGuard,
@@ -103,6 +99,10 @@ export class AnalyticsClientController {
     @Query() dto: GetCourseRatingHistoryDto,
     @CurrentUser() user: currentClientUser,
   ) {
-    return this.analyticsService.getCourseRatingHistory(dto.courseId, dto, user);
+    return this.analyticsService.getCourseRatingHistory(
+      dto.courseId,
+      dto,
+      user,
+    );
   }
 }

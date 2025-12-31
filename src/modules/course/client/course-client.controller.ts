@@ -104,6 +104,12 @@ export class CourseController {
     return this.courseService.getAllCoursesWithFilters(dto);
   }
 
+  @Get('/groups')
+  @ApiOperation({ summary: 'Get groups that user has joined' })
+  async getMyGroups(@CurrentUser() user: currentClientUser) {
+    return this.courseService.getMyGroups(user);
+  }
+
   @Get('/:slug')
   @Public()
   @ApiOperation({ summary: 'Get course by slug' })

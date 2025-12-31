@@ -1,6 +1,17 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { CreateLessonDto, LessonDto, UpdateLessonDto, ChapterWithLessonsTreeItemDto, LessonTreeItemDto } from './dto/lesson.dto';
+import {
+  CreateLessonDto,
+  LessonDto,
+  UpdateLessonDto,
+  ChapterWithLessonsTreeItemDto,
+  LessonTreeItemDto,
+} from './dto/lesson.dto';
 import { generateUniqueSlug } from 'src/common/utils/slug.util';
 import { successResponse } from 'src/common/interfaces/response.interface';
 import { fullObjectFilter } from 'src/common/interfaces/objectFilter.interface';
@@ -78,7 +89,8 @@ export class LessonService {
         viewCount: lesson.viewCount + 1,
         videoLesson: lesson.videoLesson,
         files: lesson.files,
-        progress: lesson.userProgress?.[0]?.progress || LessonProgress.not_started,
+        progress:
+          lesson.userProgress?.[0]?.progress || LessonProgress.not_started,
         chapter: {
           id: lesson.chapter.id,
           title: lesson.chapter.title,
@@ -96,7 +108,6 @@ export class LessonService {
     return response;
   }
 
-
   async getNextLessonByCourseSlug(courseSlug: string, userId: string) {
     const course = await this.prisma.course.findFirst({
       where: { slug: courseSlug, deletedAt: null, isPublished: true },
@@ -108,7 +119,7 @@ export class LessonService {
 
     const chapters = await this.prisma.chapter.findMany({
       where: { courseId: course.id },
-      orderBy: { position:'asc' },
+      orderBy: { position: 'asc' },
       include: {
         lessons: {
           orderBy: { position: 'asc' },
@@ -126,15 +137,27 @@ export class LessonService {
       throw new NotFoundException('No chapters found in this course');
     }
 
-    let inProgressLesson: { id: string; slug: string; userProgress: { id: string; progress: LessonProgress }[] } | null = null;
-    let firstNotStartedLesson: { id: string; slug: string; userProgress: { id: string; progress: LessonProgress }[] } | null = null;
-    let firstLesson: { id: string; slug: string; userProgress: { id: string; progress: LessonProgress }[] } | null = null;
+    let inProgressLesson: {
+      id: string;
+      slug: string;
+      userProgress: { id: string; progress: LessonProgress }[];
+    } | null = null;
+    let firstNotStartedLesson: {
+      id: string;
+      slug: string;
+      userProgress: { id: string; progress: LessonProgress }[];
+    } | null = null;
+    let firstLesson: {
+      id: string;
+      slug: string;
+      userProgress: { id: string; progress: LessonProgress }[];
+    } | null = null;
 
     for (const chapter of chapters) {
       if (!chapter.lessons || chapter.lessons.length === 0) {
         continue;
       }
-      
+
       for (const lesson of chapter.lessons) {
         if (!firstLesson) {
           firstLesson = lesson;
@@ -158,7 +181,8 @@ export class LessonService {
       }
     }
 
-    const targetLesson = inProgressLesson || firstNotStartedLesson || firstLesson;
+    const targetLesson =
+      inProgressLesson || firstNotStartedLesson || firstLesson;
     if (!targetLesson) {
       throw new NotFoundException('No lessons found in this course');
     }
@@ -192,7 +216,11 @@ export class LessonService {
     return response;
   }
 
-  async createLesson(chapterId: string, dto: CreateLessonDto, teacherId: string) {
+  async createLesson(
+    chapterId: string,
+    dto: CreateLessonDto,
+    teacherId: string,
+  ) {
     const chapter = await this.prisma.chapter.findFirst({
       where: { id: chapterId },
       include: {
@@ -207,7 +235,9 @@ export class LessonService {
     }
 
     if (chapter.course.teacherId !== teacherId) {
-      throw new ForbiddenException('You do not have permission to create lesson in this chapter');
+      throw new ForbiddenException(
+        'You do not have permission to create lesson in this chapter',
+      );
     }
 
     const maxPos = await this.prisma.lesson.aggregate({
@@ -225,6 +255,10 @@ export class LessonService {
           description: dto.description,
           position: nextPosition,
           isFree: dto.isFree ?? false,
+          isGenQues: dto.isGenQues ?? false,
+          isGenQuiz: dto.isGenQuiz ?? false,
+          promptForGenQues: dto.promptForGenQues,
+          promptForGenQuiz: dto.promptForGenQuiz,
         },
       });
 
@@ -246,6 +280,8 @@ export class LessonService {
             fileUrl: file.fileUrl,
             fileName: file.fileName,
             fileSize: file.fileSize,
+            isForAiQues: file.isForAiQues ?? false,
+            isForAiQuiz: file.isForAiQuiz ?? false,
           })),
         });
       }
@@ -260,7 +296,11 @@ export class LessonService {
     return response;
   }
 
-  async getLessonsByChapterId(chapterId: string, teacherId: string, filter: fullObjectFilter = {}) {
+  async getLessonsByChapterId(
+    chapterId: string,
+    teacherId: string,
+    filter: fullObjectFilter = {},
+  ) {
     const chapter = await this.prisma.chapter.findFirst({
       where: { id: chapterId },
       include: {
@@ -275,7 +315,9 @@ export class LessonService {
     }
 
     if (chapter.course.teacherId !== teacherId) {
-      throw new ForbiddenException('You do not have permission to view lessons in this chapter');
+      throw new ForbiddenException(
+        'You do not have permission to view lessons in this chapter',
+      );
     }
 
     const { keySearch, sortField = 'position', sortOrder = 'asc' } = filter;
@@ -345,6 +387,10 @@ export class LessonService {
               where: { userId },
               select: { progress: true },
             },
+            reviewSetting: {
+              where: { userId },
+              select: { id: true },
+            },
           },
         },
       },
@@ -365,7 +411,9 @@ export class LessonService {
         isFree: lesson.isFree,
         viewCount: lesson.viewCount,
         videoLesson: lesson.videoLesson,
-        progress: lesson.userProgress?.[0]?.progress || LessonProgress.not_started,
+        progress:
+          lesson.userProgress?.[0]?.progress || LessonProgress.not_started,
+        isInReviewSpace: !!lesson.reviewSetting,
         createdAt: lesson.createdAt,
         updatedAt: lesson.updatedAt,
       }));
@@ -399,7 +447,11 @@ export class LessonService {
     return response;
   }
 
-  async updateLesson(lessonId: string, dto: UpdateLessonDto, teacherId: string) {
+  async updateLesson(
+    lessonId: string,
+    dto: UpdateLessonDto,
+    teacherId: string,
+  ) {
     const lesson = await this.prisma.lesson.findFirst({
       where: { id: lessonId },
       include: {
@@ -419,7 +471,9 @@ export class LessonService {
     }
 
     if (lesson.chapter.course.teacherId !== teacherId) {
-      throw new ForbiddenException('You do not have permission to update this lesson');
+      throw new ForbiddenException(
+        'You do not have permission to update this lesson',
+      );
     }
 
     const updatedLesson = await this.prisma.$transaction(async (tx) => {
@@ -435,6 +489,22 @@ export class LessonService {
 
       if (dto.isFree !== undefined) {
         updateData.isFree = dto.isFree;
+      }
+
+      if (dto.isGenQues !== undefined) {
+        updateData.isGenQues = dto.isGenQues;
+      }
+
+      if (dto.isGenQuiz !== undefined) {
+        updateData.isGenQuiz = dto.isGenQuiz;
+      }
+
+      if (dto.promptForGenQues !== undefined) {
+        updateData.promptForGenQues = dto.promptForGenQues;
+      }
+
+      if (dto.promptForGenQuiz !== undefined) {
+        updateData.promptForGenQuiz = dto.promptForGenQuiz;
       }
 
       const updated = await tx.lesson.update({
@@ -486,6 +556,8 @@ export class LessonService {
               fileUrl: file.fileUrl,
               fileName: file.fileName,
               fileSize: file.fileSize,
+              isForAiQues: file.isForAiQues ?? false,
+              isForAiQuiz: file.isForAiQuiz ?? false,
             })),
           });
         }
@@ -528,7 +600,9 @@ export class LessonService {
     }
 
     if (lesson.chapter.course.teacherId !== teacherId) {
-      throw new ForbiddenException('You do not have permission to delete this lesson');
+      throw new ForbiddenException(
+        'You do not have permission to delete this lesson',
+      );
     }
 
     await this.prisma.lesson.delete({
@@ -562,7 +636,9 @@ export class LessonService {
     }
 
     if (lesson.chapter.course.teacherId !== teacherId) {
-      throw new ForbiddenException('You do not have permission to view this lesson');
+      throw new ForbiddenException(
+        'You do not have permission to view this lesson',
+      );
     }
 
     const response: successResponse = {
@@ -572,7 +648,11 @@ export class LessonService {
     return response;
   }
 
-  async pingStatusLesson(lessonSlug: string, progress: LessonProgress, userId: string) {
+  async pingStatusLesson(
+    lessonSlug: string,
+    progress: LessonProgress,
+    userId: string,
+  ) {
     const lesson = await this.prisma.lesson.findFirst({
       where: { slug: lessonSlug },
       include: {
@@ -634,5 +714,10 @@ export class LessonService {
       return response;
     }
   }
-}
 
+  async getLessonById(lessonId: string) {
+    return await this.prisma.lesson.findUnique({
+      where: { id: lessonId },
+    });
+  }
+}

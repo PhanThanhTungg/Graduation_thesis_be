@@ -23,7 +23,7 @@ import { successResponse } from 'src/common/interfaces/response.interface';
 import { getSystemErrorMap } from 'util';
 import { fullObjectFilter } from 'src/common/interfaces/objectFilter.interface';
 import { CategoryService } from 'src/modules/category/category.service';
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus, ConversationMemberRole } from '@prisma/client';
 
 @Injectable()
 export class CourseService {
@@ -315,12 +315,29 @@ export class CourseService {
         },
       });
 
+      const conversation = await tx.conversation.create({
+        data: {
+          name:
+            courseData.title.length > 50
+              ? courseData.title.substring(0, 47) + '...'
+              : courseData.title,
+          isGroup: true,
+          members: {
+            create: {
+              userId: currentUser.id,
+              role: ConversationMemberRole.admin,
+            },
+          },
+        },
+      });
+
       const createdCourse = await tx.course.create({
         data: {
           ...courseData,
           slug: generateUniqueSlug(courseData.title),
           teacherId: currentUser.id,
           courseDescriptionId: courseDescriptionData.id,
+          conversationId: conversation.id,
         },
       });
 
@@ -1144,6 +1161,102 @@ export class CourseService {
         },
       },
     };
+    return response;
+  }
+
+  async getMyGroups(currentUser: currentClientUser) {
+    const groups = await this.prisma.conversation.findMany({
+      where: {
+        isGroup: true,
+        members: {
+          some: {
+            userId: currentUser.id,
+          },
+        },
+      },
+      include: {
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
+        messages: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 1,
+          include: {
+            sender: {
+              select: {
+                id: true,
+                fullName: true,
+              },
+            },
+          },
+        },
+        course: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            thumbnailUrl: true,
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
+
+    const transformedGroups = groups.map((group) => {
+      const currentUserMember = group.members.find(
+        (m) => m.userId === currentUser.id,
+      );
+      const lastMessage = group.messages[0];
+
+      const groupData: any = {
+        id: group.id,
+        name: group.name || 'Group',
+        isGroup: true,
+        role: currentUserMember?.role || 'member',
+        memberCount: group.members.length,
+        createdAt: group.createdAt,
+        updatedAt: group.updatedAt,
+      };
+
+      if (group.course) {
+        groupData.course = {
+          id: group.course.id,
+          title: group.course.title,
+          slug: group.course.slug,
+          thumbnailUrl: group.course.thumbnailUrl,
+        };
+      }
+
+      if (lastMessage) {
+        groupData.lastMessage = {
+          id: lastMessage.id,
+          message: lastMessage.message,
+          senderId: lastMessage.senderId,
+          senderName: lastMessage.sender.fullName,
+          createdAt: lastMessage.createdAt,
+        };
+      }
+
+      return groupData;
+    });
+
+    const response: successResponse = {
+      message: 'Get groups successfully',
+      data: transformedGroups,
+    };
+
     return response;
   }
 }

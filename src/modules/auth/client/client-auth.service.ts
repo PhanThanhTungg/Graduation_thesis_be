@@ -16,7 +16,6 @@ import {
 import { UserRole } from 'src/common/enums/common.enum';
 import { LoggingService } from 'src/shared/logging/logging.service';
 import { randomBytes } from 'crypto';
-import { User } from '@prisma/client';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 import { EmailService } from 'src/shared/email/email.service';
 import { successResponse } from 'src/common/interfaces/response.interface';
@@ -48,41 +47,50 @@ export class ClientAuthService {
     }
 
     const passwordHash = await bcrypt.hash(registerDto.password, 10);
-    const user = await this.prisma.user.create({
-      data: {
-        fullName: registerDto.fullName,
-        email: registerDto.email,
-        passwordHash,
+
+    return await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          fullName: registerDto.fullName,
+          email: registerDto.email,
+          passwordHash,
+          role: UserRole.student,
+          country: registerDto.country,
+          timezone: registerDto.timezone,
+        },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          role: true,
+          emailVerified: true,
+          avatarUrl: true,
+          status: true,
+          country: true,
+          timezone: true,
+        },
+      });
+
+      await tx.studentSetting.create({
+        data: {
+          userId: user.id,
+        },
+      });
+
+      const payload: JwtPayload = {
+        sub: user.id,
+        email: user.email,
+        type: 'client',
         role: UserRole.student,
-        country: registerDto.country,
-        timezone: registerDto.timezone,
-      },
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        role: true,
-        emailVerified: true,
-        avatarUrl: true,
-        status: true,
-        country: true,
-        timezone: true,
-      },
+      };
+      const tokens = await this.jwtAuthService.generateTokenPair(payload);
+
+      return {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        user: user,
+      };
     });
-
-    const payload: JwtPayload = {
-      sub: user.id,
-      email: user.email,
-      type: 'client',
-      role: UserRole.student,
-    };
-    const tokens = await this.jwtAuthService.generateTokenPair(payload);
-
-    return {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      user: user,
-    };
   }
 
   async login(loginDto: ClientLoginDto) {
@@ -94,6 +102,11 @@ export class ClientAuthService {
       type: 'client',
       role: user.role,
     };
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
 
     const tokens = await this.jwtAuthService.generateTokenPair(payload);
 
@@ -344,7 +357,11 @@ export class ClientAuthService {
       });
     }
 
-    // Generate JWT tokens
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
     const jwtPayload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -405,7 +422,11 @@ export class ClientAuthService {
       });
     }
 
-    // Generate JWT tokens
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
     const jwtPayload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -427,6 +448,24 @@ export class ClientAuthService {
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
     };
+  }
+
+  async checkUserById(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    return user;
+  }
+
+  async findUserByTelegramId(telegramId: string) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        studentSetting: {
+          telegramId,
+        },
+      },
+    });
+    return user;
   }
 
   private generateVerificationToken(): string {
@@ -457,7 +496,16 @@ export class ClientAuthService {
       throw new UnauthorizedException('Account is inactive');
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...userWithoutPassword } = user;
     return userWithoutPassword;
+  }
+
+  async updateLastLoginAt(userId: string): Promise<void> {
+    console.log('Updating last login at for user', userId);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { lastLoginAt: new Date() },
+    });
   }
 }
