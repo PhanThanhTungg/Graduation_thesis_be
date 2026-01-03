@@ -11,7 +11,7 @@ services:
         - redis-data:/bitnami/redis/data
       restart: always
       networks:
-      - akabis_dev
+        - akabis_dev
 volumes:
   redis-data:
     driver: local

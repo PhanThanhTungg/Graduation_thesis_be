@@ -124,4 +124,9 @@ export class EnvSchema {
   @IsString()
   @IsNotEmpty()
   REDIS_URI: string;
+
+  // RabbitMQ
+  @IsString()
+  @IsNotEmpty()
+  AMQP_URI: string;
 }

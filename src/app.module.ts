@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { EnvModule } from './shared/env/env.module';
 import { PrismaModule } from './shared/prisma/prisma.module';
 import { RedisModule } from './shared/redis/redis.module';
+import { RabbitMQModule } from './shared/rabbitmq/rabbitmq.module';
 import { EmailModule } from './shared/email/email.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ProfileModule } from './modules/profile/profile.module';
@@ -37,6 +38,7 @@ import { SocketModule } from './modules/socket/socket.module';
     EnvModule,
     PrismaModule,
     RedisModule,
+    RabbitMQModule,
     EmailModule,
     LoggingModule,
     AuthModule,
