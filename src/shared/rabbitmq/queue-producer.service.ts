@@ -46,7 +46,6 @@ export class QueueProducerService {
           persistent: true,
         },
       );
-
       if (sent) {
         this.logger.debug(`Message sent to queue: ${queueName}`);
         return true;

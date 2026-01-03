@@ -1,3 +1,0 @@
--- AlterTable
-ALTER TABLE "analytics" ADD COLUMN     "fees_change" DOUBLE PRECISION NOT NULL DEFAULT 0,
-ADD COLUMN     "total_fees" DOUBLE PRECISION NOT NULL DEFAULT 0;
