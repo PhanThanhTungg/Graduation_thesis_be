@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
-import { SpaceRepetitionJob } from './jobs/space-repetition.job';
+import { SpaceRepetitionJob } from './schedule/space-repetition.schedule';
 import { SpaceRepetitionWorker } from './workers/space-repetition.worker';
 import { PrismaModule } from 'src/shared/prisma/prisma.module';
 import { RabbitMQModule } from 'src/shared/rabbitmq/rabbitmq.module';
 import { TelegramModule } from 'src/modules/bot/telegram/telegram.module';
 import { QuestionModule } from 'src/modules/question/client/question-client.module';
+import { InsertRolePermissionJob } from 'src/jobs/insert-role-permission.job';
 
 @Module({
   imports: [
@@ -15,6 +16,11 @@ import { QuestionModule } from 'src/modules/question/client/question-client.modu
     TelegramModule,
     QuestionModule,
   ],
-  providers: [SpaceRepetitionJob, SpaceRepetitionWorker],
+  providers: [
+    SpaceRepetitionJob,
+    SpaceRepetitionWorker,
+    InsertRolePermissionJob,
+  ],
+  exports: [InsertRolePermissionJob],
 })
 export class AutomationModule {}

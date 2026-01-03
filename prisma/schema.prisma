@@ -13,14 +13,22 @@ enum UserRole {
 }
 
 enum AdminObject {
-  user_management
-  course_management
-  category_management
+  dashboard
+  course
+  category
+  transaction
+  payment
+  user
+  permission
+  admin
+  setting
 }
 
 enum AdminAction {
   view
   edit
+  delete
+  create
 }
 
 enum Status {
