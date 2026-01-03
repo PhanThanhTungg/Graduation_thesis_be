@@ -305,9 +305,9 @@ export class QuestionService {
 
   async scoreQuestionForSpr(questionId: string, userId: string) {
     const question = await this.getQuestion(questionId, userId);
-    if (!question.answer)
+    if (question.answer == null)
       throw new BadRequestException('Question not answered');
-    if (!question.score)
+    if (question.score == null)
       throw new BadRequestException('Question already scored');
 
     const lessonReviewSetting = await this.prisma.lessonReviewSetting.findFirst(
@@ -326,8 +326,6 @@ export class QuestionService {
       throw new BadRequestException('Lesson review setting not found');
     if (!lessonReviewSetting.reviewEnabled)
       throw new BadRequestException('Lesson review is not enabled');
-    if (lessonReviewSetting.status === LessonReviewStatus.suspending)
-      throw new BadRequestException('Lesson review is suspending');
 
     const evalScore = transformScore(question.score);
     let {
@@ -337,6 +335,10 @@ export class QuestionService {
       reviewStep: lsReviewStep,
       lapsed: lsLapsed,
     } = lessonReviewSetting;
+
+    if (lsStatus === LessonReviewStatus.suspending)
+      throw new BadRequestException('Lesson review is suspending');
+
     const {
       learningSteps: stLeanringSteps,
       lastStepFromLearningToReview: stLastStepFromLearningToReview,
@@ -351,6 +353,9 @@ export class QuestionService {
       lsStatus === LessonReviewStatus.learning
     ) {
       if (evalScore === 0) lsLapsed += 1;
+      if (lsLapsed >= stLeechThreshold) {
+        lsStatus = LessonReviewStatus.suspending;
+      }
 
       if (evalScore <= 1) {
         lsReviewStep = lsReviewStep >= 1 ? lsReviewStep - 1 : 0;
