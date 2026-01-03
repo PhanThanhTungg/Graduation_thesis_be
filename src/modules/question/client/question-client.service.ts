@@ -352,14 +352,17 @@ export class QuestionService {
     ) {
       if (evalScore === 0) lsLapsed += 1;
 
-      if (evalScore === 1)
+      if (evalScore <= 1) {
         lsReviewStep = lsReviewStep >= 1 ? lsReviewStep - 1 : 0;
-      else if (evalScore === 4) {
+        lsInterval = stLeanringSteps[lsReviewStep];
+      } else if (evalScore === 4) {
         if (lsReviewStep >= stLastStepFromLearningToReview) {
           lsStatus = LessonReviewStatus.reviewing;
           lsInterval = stIniInterval;
+        } else {
+          lsReviewStep += 1;
+          lsInterval = stLeanringSteps[lsReviewStep];
         }
-        lsReviewStep += 1;
       } else if (evalScore === 5) {
         lsStatus = LessonReviewStatus.reviewing;
         lsInterval = stIniEasyInterval;
@@ -373,6 +376,7 @@ export class QuestionService {
       if (evalScore === 0) {
         lsStatus = LessonReviewStatus.learning;
         lsReviewStep = stLastStepFromLearningToReview - 2;
+        lsInterval = stLeanringSteps[lsReviewStep];
       } else if (evalScore <= 3) {
         lsStatus = LessonReviewStatus.lapsed;
         lsInterval *= 0.25 * evalScore;
@@ -384,12 +388,15 @@ export class QuestionService {
       if (evalScore === 0) {
         lsStatus = LessonReviewStatus.learning;
         lsReviewStep = stLastStepFromLearningToReview - 1;
+        lsInterval = stLeanringSteps[lsReviewStep];
       } else if (evalScore <= 3) {
         lsStatus = LessonReviewStatus.lapsed;
         lsReviewStep = stLastStepFromLearningToReview;
+        lsInterval = stLeanringSteps[lsReviewStep];
       } else if (evalScore <= 5) {
         lsStatus = LessonReviewStatus.reviewing;
         lsInterval = stIniInterval;
+        lsInterval = stLeanringSteps[lsReviewStep];
       }
     }
 
