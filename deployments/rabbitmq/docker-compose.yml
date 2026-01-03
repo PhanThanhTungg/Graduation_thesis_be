@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+  rabbitmq:
+    image: rabbitmq:4.1.3-management-alpine
+    container_name: rabbit-aikabis
+    ports:
+      - "${RABBITMQ_PORT}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT}:15672"
+    volumes:
+      - ./data:/var/lib/rabbitmq
+      - ./log:/var/log/rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_ERLANG_COOKIE: cluster_cookie
+      RABBITMQ_DEFAULT_USER: "${RABBITMQ_DEFAULT_USER}"
+      RABBITMQ_DEFAULT_PASS: "${RABBITMQ_DEFAULT_PASS}"
+      RABBITMQ_DEFAULT_VHOST: "/"
+    env_file:
+      - .env
+    networks:
+      - akabis_dev
+networks:
+  akabis_dev:
+    driver: bridge
