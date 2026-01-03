@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  ConsoleLogger,
+  Injectable,
+  Logger,
+  OnModuleInit,
+} from '@nestjs/common';
 import { QueueConsumerService } from 'src/shared/rabbitmq/queue-consumer.service';
 import { QueueName } from 'src/shared/rabbitmq/queue.constants';
 import { SpaceRepetitionQuestionMessage } from 'src/shared/rabbitmq/interfaces/space-repetition-message.interface';
@@ -145,6 +150,12 @@ export class SpaceRepetitionWorker implements OnModuleInit {
         `Error processing space repetition message for user ${message.userId}:`,
         error,
       );
+      if (message.sprBot === SprBot.telegram && message.telegramId) {
+        await this.telegramService.sendMessage(
+          message.telegramId,
+          `🚫 <code>failed to send question: ${error.message}</code>`,
+        );
+      }
       throw error;
     }
   }
