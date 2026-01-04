@@ -24,6 +24,7 @@ import { PaymentClientModule } from './modules/payment/client/payment-client.mod
 import { NoteClientModule } from './modules/note/client/note-client.module';
 import { StudentModule } from './modules/student/client/student.module';
 import { FinanceClientModule } from './modules/finance/client/finance-client.module';
+import { DiskClientModule } from './modules/disk/client/disk-client.module';
 import { QuestionModule } from './modules/question/client/question-client.module';
 import { ReviewSpaceModule } from './modules/review-space/review-space.module';
 import { ClientSettingModule } from './modules/setting/client/client-setting.module';
@@ -32,6 +33,7 @@ import { TelegramModule } from './modules/bot/telegram/telegram.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AutomationModule } from './automation/automation.module';
 import { SocketModule } from './modules/socket/socket.module';
+import { WebhookModule } from './modules/webhook/webhook.module';
 import { AdminPermissionModule } from './modules/permission/admin/admin-permission.module';
 
 @Module({
@@ -61,6 +63,7 @@ import { AdminPermissionModule } from './modules/permission/admin/admin-permissi
     NoteClientModule,
     StudentModule,
     FinanceClientModule,
+    DiskClientModule,
     QuestionModule,
     ReviewSpaceModule,
     ClientSettingModule,
@@ -69,6 +72,7 @@ import { AdminPermissionModule } from './modules/permission/admin/admin-permissi
     AnalyticsModule,
     AutomationModule,
     SocketModule,
+    WebhookModule,
     AdminPermissionModule,
   ],
   providers: [],

@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import fetch, { RequestInit } from 'node-fetch';
 import { EnvService } from 'src/shared/env/env.service';
 
@@ -22,7 +26,9 @@ export class PaypalService {
     if (!response.ok) {
       const errorBody = await response.text();
       this.logger.error(`PayPal API error ${response.status}: ${errorBody}`);
-      throw new InternalServerErrorException('Failed to communicate with PayPal');
+      throw new InternalServerErrorException(
+        'Failed to communicate with PayPal',
+      );
     }
     return (await response.json()) as T;
   }
@@ -35,14 +41,17 @@ export class PaypalService {
 
     const body = new URLSearchParams({ grant_type: 'client_credentials' });
 
-    const response = await this.request<{ access_token: string }>(`${baseUrl}/v1/oauth2/token`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
+    const response = await this.request<{ access_token: string }>(
+      `${baseUrl}/v1/oauth2/token`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${auth}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: body.toString(),
       },
-      body: body.toString(),
-    });
+    );
 
     return response.access_token;
   }
@@ -83,13 +92,51 @@ export class PaypalService {
     const baseUrl = this.envService.get('PAYPAL_BASEURL');
     const token = await this.getAccessToken();
 
-    return this.request<any>(`${baseUrl}/v2/checkout/orders/${paypalOrderId}/capture`, {
+    return this.request<any>(
+      `${baseUrl}/v2/checkout/orders/${paypalOrderId}/capture`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  }
+
+  async createPayout(email: string, amount: number, note?: string) {
+    const baseUrl = this.envService.get('PAYPAL_BASEURL');
+    const token = await this.getAccessToken();
+
+    const payoutId = `payout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    const payload = {
+      sender_batch_header: {
+        sender_batch_id: payoutId,
+        email_subject: 'Withdrawal from Aikabis',
+        email_message: note || 'Your withdrawal request has been processed',
+      },
+      items: [
+        {
+          recipient_type: 'EMAIL',
+          amount: {
+            value: amount.toFixed(2),
+            currency: 'USD',
+          },
+          receiver: email,
+          note: note || 'Withdrawal from Aikabis',
+          sender_item_id: payoutId,
+        },
+      ],
+    };
+
+    return this.request<any>(`${baseUrl}/v1/payments/payouts`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify(payload),
     });
   }
 }
-

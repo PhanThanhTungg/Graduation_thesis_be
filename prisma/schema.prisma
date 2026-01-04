@@ -115,6 +115,11 @@ model AdminSetting {
   iniEasyInterval              Int     @default(4) @map("ini_easy_interval") // interval đầu tiên từ learning sang reviewing khi nút easy.
   leechThreshold               Int     @default(8) @map("leech_threshold") // Tạm ngưng thẻ nếu quên n lần
 
+  // system fee
+  feeUploadPer100Mb Float @default(0.1) @map("fee_upload_per_100_mb")
+  percentCommission Float @default(10) @map("percent_commission")
+  
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
@@ -184,6 +189,7 @@ model User {
   platformTransactions    PlatformTransaction[]    @relation("UserPlatformTransactions")
   lessonReviewSettings    LessonReviewSetting[]
   studentSetting          StudentSetting?
+  diskSpaceTeacher        DiskSpaceTeacher?
 
   wallet              Wallet?
   orders              Order[]              @relation("StudentOrders")
@@ -234,6 +240,20 @@ model TeacherSetting {
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("teacher_setting")
+}
+
+model DiskSpaceTeacher {
+  id String @id @default(uuid())
+  userId String @unique @map("user_id")
+
+  value Int @map("value")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  from DateTime  @default(now()) @map("created_at")
+  to DateTime @default(dbgenerated("NOW() + INTERVAL '30 days'")) @map("to")
+
+  @@map("disk_space_teacher")
 }
 
 model Category {
@@ -358,7 +378,7 @@ model LessonReviewSetting {
 
   note       String?      @map("note")
   difficulty Difficulty   @default(medium) @map("difficulty")
-  typeQues   TypeQuestion @default(single_choice) @map("type_ques")
+  typeQues   TypeQuestion @default(short_answer) @map("type_ques")
 
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -383,7 +403,7 @@ model VideoLesson {
   lessonId String @unique @map("lesson_id")
   videoId  String @map("video_id")
   embedUrl String @map("embed_url")
-
+  size Int? @default(0) @map("size")
   duration Int?
   lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
@@ -583,10 +603,8 @@ model Withdrawal {
   id              String            @id @default(uuid())
   walletId        String            @map("wallet_id")
   amount          Float
+  email           String            
   status          TransactionStatus @default(pending)
-  bankName        String?           @map("bank_name") @db.VarChar(100)
-  bankAccount     String?           @map("bank_account") @db.VarChar(50)
-  bankAccountName String?           @map("bank_account_name") @db.VarChar(100)
   note            String?           @db.Text
   rejectionReason String?           @map("rejection_reason") @db.Text
   processedBy     String?           @map("processed_by") // Admin ID xử lý
@@ -630,24 +648,12 @@ model Order {
   @@map("order")
 }
 
-model SystemFee {
-  id                  String @id @default(uuid())
-  uploadLessonFee     Float  @default(0) @map("upload_lesson_fee") // Phí upload 1 bài học
-  aiFeatureBaseFee    Float  @default(0) @map("ai_feature_base_fee") // Phí cơ bản dùng AI
-  platformCommission  Float  @default(10) @map("platform_commission") // % hoa hồng nền tảng
-  minWithdrawalAmount Float  @default(100000) @map("min_withdrawal_amount") // Số tiền rút tối thiểu
-
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime? @updatedAt @map("updated_at")
-
-  @@map("system_fee")
-}
-
 // -------------schema for payment system : Platform -------------
 enum PlatformTransactionType {
   commission_income // Thu hoa hồng từ khóa học (10%)
   upload_fee_income // Thu phí upload bài học
   ai_fee_income // Thu phí sử dụng AI
+  disk_space_income // Thu phí sử dụng disk space
   // còn nhiều loại khác nữa, thêm sau ...
 }
 

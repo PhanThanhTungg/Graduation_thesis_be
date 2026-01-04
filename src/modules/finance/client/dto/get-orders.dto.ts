@@ -3,14 +3,14 @@ import {
   IsNumber,
   Min,
   Max,
-  IsString,
   IsEnum,
+  IsString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { TransactionType, TransactionStatus } from '@prisma/client';
+import { OrderStatus } from '@prisma/client';
 
-export class GetTransactionsDto {
+export class GetOrdersDto {
   @ApiPropertyOptional({
     description: 'Page number',
     example: 1,
@@ -37,29 +37,29 @@ export class GetTransactionsDto {
   limit?: number = 10;
 
   @ApiPropertyOptional({
-    description: 'Filter by transaction type',
-    enum: TransactionType,
+    description: 'Filter by order status',
+    enum: OrderStatus,
   })
   @IsOptional()
-  @IsEnum(TransactionType)
-  type?: TransactionType;
+  @IsEnum(OrderStatus)
+  status?: OrderStatus;
 
   @ApiPropertyOptional({
-    description: 'Filter by transaction status',
-    enum: TransactionStatus,
-  })
-  @IsOptional()
-  @IsEnum(TransactionStatus)
-  status?: TransactionStatus;
-
-  @ApiPropertyOptional({
-    description: 'Field to sort by',
-    enum: ['amount', 'createdAt'],
-    example: 'createdAt',
+    description: 'Filter by course ID',
+    type: String,
   })
   @IsOptional()
   @IsString()
-  sortField?: 'amount' | 'createdAt' = 'createdAt';
+  courseId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Sort field',
+    enum: ['finalPrice', 'createdAt'],
+    example: 'createdAt',
+  })
+  @IsOptional()
+  @IsEnum(['finalPrice', 'createdAt'])
+  sortField?: 'finalPrice' | 'createdAt';
 
   @ApiPropertyOptional({
     description: 'Sort order',
@@ -68,5 +68,5 @@ export class GetTransactionsDto {
   })
   @IsOptional()
   @IsEnum(['asc', 'desc'])
-  sortOrder?: 'asc' | 'desc' = 'desc';
+  sortOrder?: 'asc' | 'desc';
 }

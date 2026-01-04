@@ -305,9 +305,9 @@ export class QuestionService {
 
   async scoreQuestionForSpr(questionId: string, userId: string) {
     const question = await this.getQuestion(questionId, userId);
-    if (!question.answer)
+    if (question.answer == null)
       throw new BadRequestException('Question not answered');
-    if (!question.score)
+    if (question.score == null)
       throw new BadRequestException('Question already scored');
 
     const lessonReviewSetting = await this.prisma.lessonReviewSetting.findFirst(
@@ -326,8 +326,6 @@ export class QuestionService {
       throw new BadRequestException('Lesson review setting not found');
     if (!lessonReviewSetting.reviewEnabled)
       throw new BadRequestException('Lesson review is not enabled');
-    if (lessonReviewSetting.status === LessonReviewStatus.suspending)
-      throw new BadRequestException('Lesson review is suspending');
 
     const evalScore = transformScore(question.score);
     let {
@@ -337,6 +335,10 @@ export class QuestionService {
       reviewStep: lsReviewStep,
       lapsed: lsLapsed,
     } = lessonReviewSetting;
+
+    if (lsStatus === LessonReviewStatus.suspending)
+      throw new BadRequestException('Lesson review is suspending');
+
     const {
       learningSteps: stLeanringSteps,
       lastStepFromLearningToReview: stLastStepFromLearningToReview,
@@ -351,15 +353,21 @@ export class QuestionService {
       lsStatus === LessonReviewStatus.learning
     ) {
       if (evalScore === 0) lsLapsed += 1;
+      if (lsLapsed >= stLeechThreshold) {
+        lsStatus = LessonReviewStatus.suspending;
+      }
 
-      if (evalScore === 1)
+      if (evalScore <= 1) {
         lsReviewStep = lsReviewStep >= 1 ? lsReviewStep - 1 : 0;
-      else if (evalScore === 4) {
+        lsInterval = stLeanringSteps[lsReviewStep];
+      } else if (evalScore === 4) {
         if (lsReviewStep >= stLastStepFromLearningToReview) {
           lsStatus = LessonReviewStatus.reviewing;
           lsInterval = stIniInterval;
+        } else {
+          lsReviewStep += 1;
+          lsInterval = stLeanringSteps[lsReviewStep];
         }
-        lsReviewStep += 1;
       } else if (evalScore === 5) {
         lsStatus = LessonReviewStatus.reviewing;
         lsInterval = stIniEasyInterval;
@@ -373,6 +381,7 @@ export class QuestionService {
       if (evalScore === 0) {
         lsStatus = LessonReviewStatus.learning;
         lsReviewStep = stLastStepFromLearningToReview - 2;
+        lsInterval = stLeanringSteps[lsReviewStep];
       } else if (evalScore <= 3) {
         lsStatus = LessonReviewStatus.lapsed;
         lsInterval *= 0.25 * evalScore;
@@ -384,12 +393,15 @@ export class QuestionService {
       if (evalScore === 0) {
         lsStatus = LessonReviewStatus.learning;
         lsReviewStep = stLastStepFromLearningToReview - 1;
+        lsInterval = stLeanringSteps[lsReviewStep];
       } else if (evalScore <= 3) {
         lsStatus = LessonReviewStatus.lapsed;
         lsReviewStep = stLastStepFromLearningToReview;
+        lsInterval = stLeanringSteps[lsReviewStep];
       } else if (evalScore <= 5) {
         lsStatus = LessonReviewStatus.reviewing;
         lsInterval = stIniInterval;
+        lsInterval = stLeanringSteps[lsReviewStep];
       }
     }
 

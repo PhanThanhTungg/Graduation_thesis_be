@@ -84,6 +84,8 @@ export class EnvSchema {
   PAYPAL_BASEURL: string;
   @IsString()
   PAYPAL_REDIRECT_BASE_URL: string;
+  @IsString()
+  PAYPAL_ADMIN_EMAIL: string;
 
   // Google OAuth
   @IsString()

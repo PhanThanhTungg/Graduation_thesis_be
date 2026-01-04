@@ -37,7 +37,7 @@ export class SpaceRepetitionJob {
           "last_active_date" AS "lastActiveDate"
         FROM "StudentSetting"
         WHERE "enabled_spr" = true
-          AND ("spr_bot" IS NOT NULL)
+          AND ("spr_bot" = 'telegram' OR "spr_bot" = 'discord')
           AND ("telegram_id" IS NOT NULL OR "discord_id" IS NOT NULL)
           AND (
             "last_active_date" IS NULL
