@@ -6,6 +6,7 @@ import {
 import { AiModel, Difficulty, SprBot, TypeQuestion } from '@prisma/client';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { QuestionService } from '../question/client/question-client.service';
+import { AnswerQuestionDto } from './dto/answer-question.dto';
 
 @Injectable()
 export class WebhookService {
@@ -84,7 +85,7 @@ export class WebhookService {
         LIMIT 1
       `;
 
-    if (!firstDue) return;
+    if (!firstDue) throw new BadRequestException('No question due for SPR');
 
     const unAnsweredQuestion = await this.prisma.question.findFirst({
       where: {
@@ -95,15 +96,10 @@ export class WebhookService {
     });
 
     if (unAnsweredQuestion) {
-      if (lastActiveDate) {
-        const spaceTime =
-          new Date().getTime() - new Date(lastActiveDate).getTime();
-        if (spaceTime < 24 * 60 * 60 * 1000)
-          throw new BadRequestException('Student is not due for SPR');
-      }
-
       await this.updateLastActiveDate(userId);
-      return unAnsweredQuestion;
+      return {
+        data: unAnsweredQuestion,
+      };
     }
 
     const newQuestionRes = await this.questionService.generateQuestions(
@@ -122,10 +118,43 @@ export class WebhookService {
 
     if (newQuestion) {
       await this.updateLastActiveDate(userId);
-      return newQuestion;
+      return {
+        data: newQuestion,
+      };
     }
 
     throw new BadRequestException('Failed to generate new question');
+  }
+
+  async answerQuestion(answerQuestionDto: AnswerQuestionDto) {
+    const { questionId, answer, userId } = answerQuestionDto;
+
+    const userSetting = await this.prisma.studentSetting.findUnique({
+      where: { userId },
+    });
+    if (!userSetting) throw new NotFoundException('User setting not found');
+    const result = await this.questionService.answerQuestion(
+      questionId,
+      {
+        answer,
+        model: userSetting.sprModel,
+      } as any,
+      userId,
+    );
+    const data = result?.data ?? result;
+    await this.questionService.scoreQuestionForSpr(questionId, userId);
+    await this.prisma.lessonReviewSetting.update({
+      where: {
+        lessonId: data.lessonId,
+        userId,
+      },
+      data: {
+        lastReviewedAt: new Date(),
+      },
+    });
+    return {
+      data: data,
+    };
   }
 
   private async updateLastActiveDate(userId: string) {
