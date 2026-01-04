@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
 import { FinanceClientService } from './finance-client.service';
 import {
   ApiBearerAuth,
@@ -17,6 +17,7 @@ import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 import { GetTransactionsDto } from './dto/get-transactions.dto';
 import { GetWithdrawalsDto } from './dto/get-withdrawals.dto';
 import { GetOrdersDto } from './dto/get-orders.dto';
+import { CreateWithdrawalDto } from './dto/create-withdrawal.dto';
 
 @Controller('finance/client')
 @ApiTags('Client / Finance')
@@ -60,5 +61,15 @@ export class FinanceClientController {
     @CurrentUser() user: currentClientUser,
   ) {
     return this.financeService.getOrders(dto, user);
+  }
+
+  @Post('withdrawals')
+  @ClientRoles(UserRole.teacher)
+  @ApiOperation({ summary: 'Create withdrawal request' })
+  async createWithdrawal(
+    @Body() dto: CreateWithdrawalDto,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.financeService.createWithdrawal(dto, user);
   }
 }

@@ -1,10 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 import { successResponse } from 'src/common/interfaces/response.interface';
 import { GetTransactionsDto } from './dto/get-transactions.dto';
 import { GetWithdrawalsDto } from './dto/get-withdrawals.dto';
 import { GetOrdersDto } from './dto/get-orders.dto';
+import { CreateWithdrawalDto } from './dto/create-withdrawal.dto';
+import { QueueProducerService } from 'src/shared/rabbitmq/queue-producer.service';
+import { QueueName } from 'src/shared/rabbitmq/queue.constants';
+import { WithdrawalMessage } from 'src/shared/rabbitmq/interfaces/withdrawal-message.interface';
 import {
   TransactionType,
   TransactionStatus,
@@ -13,7 +21,10 @@ import {
 
 @Injectable()
 export class FinanceClientService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly queueProducer: QueueProducerService,
+  ) {}
 
   async getWallet(currentUser: currentClientUser) {
     const wallet = await this.prisma.wallet.findUnique({
@@ -259,6 +270,63 @@ export class FinanceClientService {
           totalPages,
         },
       },
+    };
+
+    return response;
+  }
+
+  async createWithdrawal(
+    dto: CreateWithdrawalDto,
+    currentUser: currentClientUser,
+  ) {
+    const wallet = await this.prisma.wallet.findUnique({
+      where: { userId: currentUser.id },
+    });
+
+    if (!wallet) {
+      throw new NotFoundException('Wallet not found');
+    }
+
+    const systemFee = await this.prisma.systemFee.findFirst({
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (wallet.balance < dto.amount) {
+      throw new BadRequestException('Insufficient balance');
+    }
+
+    const withdrawal = await this.prisma.withdrawal.create({
+      data: {
+        walletId: wallet.id,
+        amount: dto.amount,
+        email: dto.email,
+        note: dto.note,
+        status: TransactionStatus.pending,
+      },
+      select: {
+        id: true,
+        walletId: true,
+        amount: true,
+        email: true,
+        status: true,
+        note: true,
+        createdAt: true,
+      },
+    });
+
+    await this.queueProducer.sendToQueue<WithdrawalMessage>(
+      QueueName.WITHDRAWAL_PROCESSING,
+      {
+        withdrawalId: withdrawal.id,
+        walletId: withdrawal.walletId,
+        amount: withdrawal.amount,
+        email: withdrawal.email,
+      },
+    );
+
+    const response: successResponse = {
+      message: 'Withdrawal request created successfully',
+      data: withdrawal,
     };
 
     return response;
