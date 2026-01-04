@@ -66,6 +66,11 @@ export class CreateLessonDto {
   @IsNumber()
   duration?: number;
 
+  @ApiPropertyOptional({ description: 'Video size in bytes' })
+  @IsOptional()
+  @IsNumber()
+  videoSize?: number;
+
   @ApiPropertyOptional({ description: 'Files', type: [FileDto] })
   @IsOptional()
   @IsArray()
@@ -133,6 +138,11 @@ export class UpdateLessonDto {
   @ApiPropertyOptional({ description: 'Duration in seconds' })
   @IsOptional()
   duration?: number;
+
+  @ApiPropertyOptional({ description: 'Video size in bytes' })
+  @IsOptional()
+  @IsNumber()
+  videoSize?: number;
 
   @ApiPropertyOptional({ description: 'Files', type: [FileDto] })
   @IsOptional()

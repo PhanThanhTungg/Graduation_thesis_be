@@ -403,7 +403,7 @@ model VideoLesson {
   lessonId String @unique @map("lesson_id")
   videoId  String @map("video_id")
   embedUrl String @map("embed_url")
-
+  size Int? @default(0) @map("size")
   duration Int?
   lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 

@@ -30,9 +30,51 @@ export class DiskClientService {
       },
     });
 
+    const [fileSizeResult, videoSizeResult] = await Promise.all([
+      this.prisma.file.aggregate({
+        where: {
+          lesson: {
+            chapter: {
+              course: {
+                teacherId: currentUser.id,
+                deletedAt: null,
+              },
+            },
+          },
+        },
+        _sum: {
+          fileSize: true,
+        },
+      }),
+      this.prisma.videoLesson.aggregate({
+        where: {
+          lesson: {
+            chapter: {
+              course: {
+                teacherId: currentUser.id,
+                deletedAt: null,
+              },
+            },
+          },
+        },
+        _sum: {
+          size: true,
+        },
+      }),
+    ]);
+
+    const fileSize = fileSizeResult._sum.fileSize || 0;
+    const videoSize = videoSizeResult._sum.size || 0;
+    const usedSpace = fileSize + videoSize;
+
     const response: successResponse = {
       message: 'Get disk space successfully',
-      data: diskSpace || null,
+      data: diskSpace
+        ? {
+            ...diskSpace,
+            usedSpace,
+          }
+        : null,
     };
 
     return response;
