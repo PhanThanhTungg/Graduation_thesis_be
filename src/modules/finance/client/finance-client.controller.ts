@@ -1,8 +1,17 @@
-import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { FinanceClientService } from './finance-client.service';
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
@@ -18,6 +27,8 @@ import { GetTransactionsDto } from './dto/get-transactions.dto';
 import { GetWithdrawalsDto } from './dto/get-withdrawals.dto';
 import { GetOrdersDto } from './dto/get-orders.dto';
 import { CreateWithdrawalDto } from './dto/create-withdrawal.dto';
+import { CreateDepositDto } from './dto/create-deposit.dto';
+import { CaptureDepositDto } from './dto/capture-deposit.dto';
 
 @Controller('finance/client')
 @ApiTags('Client / Finance')
@@ -71,5 +82,27 @@ export class FinanceClientController {
     @CurrentUser() user: currentClientUser,
   ) {
     return this.financeService.createWithdrawal(dto, user);
+  }
+
+  @Post('deposit')
+  @ClientRoles(UserRole.teacher)
+  @ApiOperation({ summary: 'Create deposit request with PayPal' })
+  async createDeposit(
+    @Body() dto: CreateDepositDto,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.financeService.createDeposit(dto, user);
+  }
+
+  @Post('deposit/:transactionId/capture')
+  @ClientRoles(UserRole.teacher)
+  @ApiOperation({ summary: 'Capture deposit payment and update wallet' })
+  @ApiParam({ name: 'transactionId', type: String })
+  async captureDeposit(
+    @Param('transactionId') transactionId: string,
+    @Body() dto: CaptureDepositDto,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.financeService.captureDeposit(transactionId, dto, user);
   }
 }
