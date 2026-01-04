@@ -149,4 +149,30 @@ export class ClientSettingService {
     };
     return response;
   }
+
+  async getFeeUploadPer100Mb(): Promise<successResponse> {
+    const adminSetting = await this.prisma.adminSetting.findFirst({
+      select: {
+        feeUploadPer100Mb: true,
+      },
+    });
+
+    if (!adminSetting) {
+      const response: successResponse = {
+        message: 'Fee upload per 100MB retrieved successfully',
+        data: {
+          feeUploadPer100Mb: 0.1,
+        },
+      };
+      return response;
+    }
+
+    const response: successResponse = {
+      message: 'Fee upload per 100MB retrieved successfully',
+      data: {
+        feeUploadPer100Mb: adminSetting.feeUploadPer100Mb,
+      },
+    };
+    return response;
+  }
 }

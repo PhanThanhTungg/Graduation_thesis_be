@@ -51,4 +51,22 @@ export class GetTransactionsDto {
   @IsOptional()
   @IsEnum(TransactionStatus)
   status?: TransactionStatus;
+
+  @ApiPropertyOptional({
+    description: 'Field to sort by',
+    enum: ['amount', 'createdAt'],
+    example: 'createdAt',
+  })
+  @IsOptional()
+  @IsString()
+  sortField?: 'amount' | 'createdAt' = 'createdAt';
+
+  @ApiPropertyOptional({
+    description: 'Sort order',
+    enum: ['asc', 'desc'],
+    example: 'desc',
+  })
+  @IsOptional()
+  @IsEnum(['asc', 'desc'])
+  sortOrder?: 'asc' | 'desc' = 'desc';
 }

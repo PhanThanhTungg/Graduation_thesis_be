@@ -7,17 +7,25 @@ import {
 } from '@nestjs/swagger';
 import { ClientSettingService } from './client-setting.service';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
-import { AuthGuard } from '@nestjs/passport';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 import { ClientRoleGuard } from 'src/common/guards/client-role.guard';
+import { UniversalAuthGuard } from 'src/common/guards/universal-auth.guard';
 import { UpdateSprSettingDto } from './dto/update-spr-setting.dto';
+import { Public } from 'src/common/decorators/public.decorator';
 
 @ApiTags('Client Setting')
 @ApiBearerAuth()
 @Controller('/setting')
-@UseGuards(AuthGuard('client-jwt'), ClientRoleGuard)
+@UseGuards(UniversalAuthGuard, ClientRoleGuard)
 export class ClientSettingController {
   constructor(private readonly clientSettingService: ClientSettingService) {}
+
+  @Get('admin/fee-upload')
+  @Public()
+  @ApiOperation({ summary: 'Get fee upload per 100MB' })
+  async getFeeUploadPer100Mb() {
+    return this.clientSettingService.getFeeUploadPer100Mb();
+  }
 
   @Get(':type')
   @ApiOperation({ summary: 'Get settings by type' })

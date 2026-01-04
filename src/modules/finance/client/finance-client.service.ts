@@ -89,6 +89,12 @@ export class FinanceClientService {
       where.status = dto.status;
     }
 
+    const sortField = dto.sortField || 'createdAt';
+    const sortOrder = dto.sortOrder || 'desc';
+
+    const orderBy: any = {};
+    orderBy[sortField] = sortOrder;
+
     const [transactions, total] = await Promise.all([
       this.prisma.transaction.findMany({
         where,
@@ -106,9 +112,7 @@ export class FinanceClientService {
           createdAt: true,
           updatedAt: true,
         },
-        orderBy: {
-          createdAt: 'desc',
-        },
+        orderBy,
         skip,
         take: limit,
       }),
@@ -292,10 +296,6 @@ export class FinanceClientService {
     if (!wallet) {
       throw new NotFoundException('Wallet not found');
     }
-
-    const systemFee = await this.prisma.systemFee.findFirst({
-      orderBy: { createdAt: 'desc' },
-    });
 
     if (wallet.balance < dto.amount) {
       throw new BadRequestException('Insufficient balance');
