@@ -4,7 +4,12 @@ import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 import { successResponse } from 'src/common/interfaces/response.interface';
 import { GetTransactionsDto } from './dto/get-transactions.dto';
 import { GetWithdrawalsDto } from './dto/get-withdrawals.dto';
-import { TransactionType, TransactionStatus } from '@prisma/client';
+import { GetOrdersDto } from './dto/get-orders.dto';
+import {
+  TransactionType,
+  TransactionStatus,
+  OrderStatus,
+} from '@prisma/client';
 
 @Injectable()
 export class FinanceClientService {
@@ -140,10 +145,8 @@ export class FinanceClientService {
           id: true,
           walletId: true,
           amount: true,
+          email: true,
           status: true,
-          bankName: true,
-          bankAccount: true,
-          bankAccountName: true,
           note: true,
           rejectionReason: true,
           processedBy: true,
@@ -166,6 +169,89 @@ export class FinanceClientService {
       message: 'Get withdrawals successfully',
       data: {
         withdrawals,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+        },
+      },
+    };
+
+    return response;
+  }
+
+  async getOrders(dto: GetOrdersDto, currentUser: currentClientUser) {
+    const page = dto.page || 1;
+    const limit = dto.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      course: {
+        teacherId: currentUser.id,
+      },
+    };
+
+    if (dto.status) {
+      where.status = dto.status;
+    }
+
+    if (dto.courseId) {
+      where.courseId = dto.courseId;
+    }
+
+    const sortField = dto.sortField || 'createdAt';
+    const sortOrder = dto.sortOrder || 'desc';
+
+    const orderBy: any = {};
+    if (sortField === 'finalPrice') {
+      orderBy.finalPrice = sortOrder;
+    } else {
+      orderBy.createdAt = sortOrder;
+    }
+
+    const [orders, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        select: {
+          id: true,
+          Order_id: true,
+          userId: true,
+          courseId: true,
+          discountAmount: true,
+          finalPrice: true,
+          status: true,
+          paymentMethod: true,
+          createdAt: true,
+          completedAt: true,
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+            },
+          },
+          course: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+            },
+          },
+        },
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    const response: successResponse = {
+      message: 'Get orders successfully',
+      data: {
+        orders,
         pagination: {
           page,
           limit,

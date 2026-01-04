@@ -16,6 +16,7 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 import { GetTransactionsDto } from './dto/get-transactions.dto';
 import { GetWithdrawalsDto } from './dto/get-withdrawals.dto';
+import { GetOrdersDto } from './dto/get-orders.dto';
 
 @Controller('finance/client')
 @ApiTags('Client / Finance')
@@ -49,5 +50,15 @@ export class FinanceClientController {
     @CurrentUser() user: currentClientUser,
   ) {
     return this.financeService.getWithdrawals(dto, user);
+  }
+
+  @Get('orders')
+  @ClientRoles(UserRole.teacher)
+  @ApiOperation({ summary: 'Get student orders for teacher courses' })
+  async getOrders(
+    @Query() dto: GetOrdersDto,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.financeService.getOrders(dto, user);
   }
 }

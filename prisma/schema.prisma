@@ -583,10 +583,8 @@ model Withdrawal {
   id              String            @id @default(uuid())
   walletId        String            @map("wallet_id")
   amount          Float
+  email           String            
   status          TransactionStatus @default(pending)
-  bankName        String?           @map("bank_name") @db.VarChar(100)
-  bankAccount     String?           @map("bank_account") @db.VarChar(50)
-  bankAccountName String?           @map("bank_account_name") @db.VarChar(100)
   note            String?           @db.Text
   rejectionReason String?           @map("rejection_reason") @db.Text
   processedBy     String?           @map("processed_by") // Admin ID xử lý
