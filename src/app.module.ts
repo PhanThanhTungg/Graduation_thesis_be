@@ -32,6 +32,7 @@ import { TelegramModule } from './modules/bot/telegram/telegram.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AutomationModule } from './automation/automation.module';
 import { SocketModule } from './modules/socket/socket.module';
+import { AdminPermissionModule } from './modules/permission/admin/admin-permission.module';
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { SocketModule } from './modules/socket/socket.module';
     AnalyticsModule,
     AutomationModule,
     SocketModule,
+    AdminPermissionModule,
   ],
   providers: [],
 })
