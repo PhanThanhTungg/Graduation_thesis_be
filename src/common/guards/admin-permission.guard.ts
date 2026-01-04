@@ -1,10 +1,28 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common'
-import { Reflector } from '@nestjs/core'
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import {
+  REQUIRE_PERMISSIONS_KEY,
+  RequiredPermission,
+} from '../decorators/require-permissions.decorator';
 
-export const AdminPermissions = (...permissions: string[]) => {
-  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-    Reflect.defineMetadata('admin-permissions', permissions, target, propertyKey)
-  }
+interface AdminUser {
+  id: string;
+  email: string;
+  fullName: string;
+  role?: string;
+  permissions: Array<{
+    adminPermissionId: string;
+    adminPermission: {
+      object: string;
+      action: string;
+    };
+  }>;
 }
 
 @Injectable()
@@ -12,30 +30,41 @@ export class AdminPermissionGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredPermissions = this.reflector.get<string[]>(
-      'admin-permissions',
-      context.getHandler(),
-    )
+    const requiredPermissions = this.reflector.getAllAndOverride<
+      RequiredPermission[]
+    >(REQUIRE_PERMISSIONS_KEY, [context.getHandler(), context.getClass()]);
 
-    if (!requiredPermissions) {
-      return true
+    if (!requiredPermissions || requiredPermissions.length === 0) {
+      return true;
     }
 
-    const request = context.switchToHttp().getRequest()
-    const user = request.user
+    const request = context.switchToHttp().getRequest();
+    const user: AdminUser = request.user;
 
-    if (!user || !user.permissions) {
-      throw new ForbiddenException('User permissions not found')
+    if (!user) {
+      throw new UnauthorizedException('Authentication required');
     }
 
-    const hasPermission = requiredPermissions.some((permission) =>
-      user.permissions.includes(permission),
-    )
+    if (!user.permissions || user.permissions.length === 0) {
+      throw new ForbiddenException(
+        'You do not have permission to access this resource',
+      );
+    }
+
+    const hasPermission = requiredPermissions.every((required) =>
+      user.permissions.some(
+        (userPerm) =>
+          userPerm.adminPermission.object === required.object &&
+          userPerm.adminPermission.action === required.action,
+      ),
+    );
 
     if (!hasPermission) {
-      throw new ForbiddenException('Insufficient permissions')
+      throw new ForbiddenException(
+        'You do not have the required permissions to access this resource',
+      );
     }
 
-    return true
+    return true;
   }
 }

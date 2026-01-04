@@ -34,6 +34,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AutomationModule } from './automation/automation.module';
 import { SocketModule } from './modules/socket/socket.module';
 import { WebhookModule } from './modules/webhook/webhook.module';
+import { AdminPermissionModule } from './modules/permission/admin/admin-permission.module';
 
 @Module({
   imports: [
@@ -72,6 +73,7 @@ import { WebhookModule } from './modules/webhook/webhook.module';
     AutomationModule,
     SocketModule,
     WebhookModule,
+    AdminPermissionModule,
   ],
   providers: [],
 })
