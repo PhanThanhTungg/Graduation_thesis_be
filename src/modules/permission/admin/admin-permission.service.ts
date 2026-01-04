@@ -6,10 +6,12 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { successResponse } from 'src/common/interfaces/response.interface';
+import { fullObjectFilter } from 'src/common/interfaces/objectFilter.interface';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -282,20 +284,37 @@ export class AdminPermissionService {
   /**
    * Get all admin accounts with their roles
    */
-  async getAllAdmins(): Promise<successResponse> {
-    const admins = await this.prisma.admin.findMany({
-      include: {
-        adminRole: {
-          select: {
-            id: true,
-            title: true,
+  async getAllAdmins(filter: fullObjectFilter): Promise<successResponse> {
+    const { keySearch, sortField = 'createdAt', sortOrder = 'desc' } = filter;
+    const page = Number(filter.page) || 1;
+    const limit = Number(filter.limit) || 10;
+
+    const where = {
+      ...(keySearch && {
+        OR: [
+          { fullName: { contains: keySearch, mode: 'insensitive' as const } },
+          { email: { contains: keySearch, mode: 'insensitive' as const } },
+        ],
+      }),
+    };
+
+    const [total, admins] = await this.prisma.$transaction([
+      this.prisma.admin.count({ where }),
+      this.prisma.admin.findMany({
+        where,
+        include: {
+          adminRole: {
+            select: {
+              id: true,
+              title: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        ...(sortField && sortOrder && { orderBy: { [sortField]: sortOrder } }),
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+    ]);
 
     // Remove password hash from response
     const formattedAdmins = admins.map((admin) => {
@@ -305,7 +324,15 @@ export class AdminPermissionService {
 
     return {
       message: 'Get all admins successfully',
-      data: formattedAdmins,
+      data: {
+        items: formattedAdmins,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
     };
   }
 
@@ -370,7 +397,7 @@ export class AdminPermissionService {
     adminId: string,
     updateAdminDto: UpdateAdminDto,
   ): Promise<successResponse> {
-    const { fullName, email, password, roleId } = updateAdminDto;
+    const { fullName, email, roleId } = updateAdminDto;
 
     // Check if admin exists
     const existingAdmin = await this.prisma.admin.findUnique({
@@ -403,19 +430,12 @@ export class AdminPermissionService {
       }
     }
 
-    // Hash password if provided
-    let passwordHash: string | undefined;
-    if (password) {
-      passwordHash = await bcrypt.hash(password, 10);
-    }
-
     // Update admin
     const admin = await this.prisma.admin.update({
       where: { id: adminId },
       data: {
         ...(fullName !== undefined && { fullName }),
         ...(email !== undefined && { email }),
-        ...(passwordHash !== undefined && { passwordHash }),
         ...(roleId !== undefined && { adminRoleId: roleId }),
       },
       include: {
@@ -434,6 +454,50 @@ export class AdminPermissionService {
     return {
       message: 'Admin updated successfully',
       data: adminData,
+    };
+  }
+
+  /**
+   * Change admin password
+   */
+  async changeAdminPassword(
+    adminId: string,
+    changePasswordDto: ChangePasswordDto,
+  ): Promise<successResponse> {
+    const { oldPassword, newPassword } = changePasswordDto;
+
+    // Check if admin exists
+    const existingAdmin = await this.prisma.admin.findUnique({
+      where: { id: adminId },
+    });
+
+    if (!existingAdmin) {
+      throw new NotFoundException(`Admin with ID ${adminId} not found`);
+    }
+
+    // Verify old password
+    const isPasswordValid = await bcrypt.compare(
+      oldPassword,
+      existingAdmin.passwordHash,
+    );
+
+    if (!isPasswordValid) {
+      throw new BadRequestException('Old password is incorrect');
+    }
+
+    // Hash new password
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await this.prisma.admin.update({
+      where: { id: adminId },
+      data: {
+        passwordHash: newPasswordHash,
+      },
+    });
+
+    return {
+      message: 'Password changed successfully',
     };
   }
 

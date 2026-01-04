@@ -26,17 +26,6 @@ export class UpdateAdminDto {
   @IsOptional()
   email?: string;
 
-  @ApiProperty({
-    description: 'Admin password',
-    required: false,
-    example: 'Password123!',
-    minLength: 6,
-  })
-  @IsString()
-  @MinLength(6)
-  @IsOptional()
-  password?: string;
-
   @ApiProperty({ description: 'Role ID', required: false, example: 'uuid' })
   @IsUUID()
   @IsOptional()
