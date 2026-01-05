@@ -537,6 +537,8 @@ model ReviewReply {
 enum TransactionType {
   deposit // Nạp tiền
   withdrawal // Rút tiền 
+  order 
+  disk
 }
 
 enum TransactionStatus {

@@ -108,4 +108,24 @@ export class UpdateAdminSettingDto {
   @IsInt()
   @Min(1)
   leechThreshold?: number;
+
+  @ApiPropertyOptional({
+    description: 'Platform commission percentage',
+    example: 10,
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  percentCommission?: number;
+
+  @ApiPropertyOptional({
+    description: 'Upload fee per 100MB',
+    example: 0.1,
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  feeUploadPer100Mb?: number;
 }

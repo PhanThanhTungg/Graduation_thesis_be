@@ -193,7 +193,7 @@ export class DiskClientService {
       await tx.transaction.create({
         data: {
           walletId: wallet.id,
-          type: TransactionType.withdrawal,
+          type: TransactionType.disk,
           amount: -totalPrice,
           balanceBefore,
           balanceAfter,
