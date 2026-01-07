@@ -218,7 +218,18 @@ export class PaymentClientService {
       capture?.purchase_units?.[0]?.payments?.captures?.[0]?.id ||
       dto.paypalOrderId;
 
+    // Get admin settings for commission percentage
+    const adminSettings = await this.prisma.adminSetting.findFirst();
+    const commissionRate = adminSettings?.percentCommission || 0;
+
+    // Calculate commission and teacher's net amount
+    const commissionAmount =
+      Math.round(order.finalPrice * (commissionRate / 100) * 100) / 100;
+    const teacherNetAmount =
+      Math.round((order.finalPrice - commissionAmount) * 100) / 100;
+
     await this.prisma.$transaction(async (tx) => {
+      // Update order status
       await tx.order.update({
         where: { id: order.id },
         data: {
@@ -228,19 +239,98 @@ export class PaymentClientService {
         },
       });
 
+      // Get or create platform wallet
+      let platformWallet = await tx.platformWallet.findFirst();
+      if (!platformWallet) {
+        platformWallet = await tx.platformWallet.create({
+          data: {
+            revenue: 0,
+          },
+        });
+      }
+
+      // Create platform transaction for commission (only if commission > 0)
+      if (commissionAmount > 0) {
+        await tx.platformTransaction.create({
+          data: {
+            walletId: platformWallet.id,
+            type: 'commission_income',
+            amount: commissionAmount,
+            balanceBefore: platformWallet.revenue,
+            balanceAfter: platformWallet.revenue + commissionAmount,
+            description: `Commission from course purchase: ${order.Order_id}`,
+            userId: order.userId,
+            metadata: {
+              orderId: order.id,
+              orderCode: order.Order_id,
+              courseId: order.courseId,
+              finalPrice: order.finalPrice,
+              commissionRate: commissionRate,
+              commissionAmount: commissionAmount,
+              teacherNetAmount: teacherNetAmount,
+            },
+          },
+        });
+
+        // Update platform wallet revenue
+        await tx.platformWallet.update({
+          where: { id: platformWallet.id },
+          data: {
+            revenue: { increment: commissionAmount },
+          },
+        });
+      }
+
+      // Get teacher's wallet to record balance before transaction
+      const teacherWallet = await tx.wallet.findUnique({
+        where: { userId: order.course.teacherId },
+      });
+
+      if (!teacherWallet) {
+        throw new Error('Teacher wallet not found');
+      }
+
+      // Create transaction record for teacher receiving payment from order
+      if (teacherNetAmount > 0) {
+        await tx.transaction.create({
+          data: {
+            walletId: teacherWallet.id,
+            type: 'order',
+            amount: teacherNetAmount,
+            balanceBefore: teacherWallet.balance,
+            balanceAfter: teacherWallet.balance + teacherNetAmount,
+            status: 'completed',
+            description: `Payment received from course purchase: ${order.Order_id}`,
+            referenceId: order.id,
+            metadata: {
+              orderId: order.id,
+              orderCode: order.Order_id,
+              courseId: order.courseId,
+              finalPrice: order.finalPrice,
+              commissionRate: commissionRate,
+              commissionAmount: commissionAmount,
+              netAmount: teacherNetAmount,
+            },
+          },
+        });
+      }
+
+      // Update teacher's wallet with net amount (after commission)
       await tx.wallet.update({
         where: { userId: order.course.teacherId },
         data: {
-          balance: { increment: order.finalPrice },
-          totalEarned: { increment: order.finalPrice },
+          balance: { increment: teacherNetAmount },
+          totalEarned: { increment: teacherNetAmount },
         },
       });
 
+      // Increment course student count
       await tx.course.update({
         where: { id: order.courseId },
         data: { countStudent: { increment: 1 } },
       });
 
+      // Increment voucher usage if applicable
       if (order.voucherId) {
         await tx.voucher.update({
           where: { id: order.voucherId },
@@ -248,6 +338,7 @@ export class PaymentClientService {
         });
       }
 
+      // Add student to course conversation if exists
       if (order.course.conversationId) {
         const existingMember = await tx.conversationMember.findUnique({
           where: {

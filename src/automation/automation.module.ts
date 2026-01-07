@@ -11,6 +11,7 @@ import { TelegramModule } from 'src/modules/bot/telegram/telegram.module';
 import { QuestionModule } from 'src/modules/question/client/question-client.module';
 import { PaymentModule } from 'src/modules/payment/payment.module';
 import { InsertRolePermissionJob } from 'src/jobs/insert-role-permission.job';
+import { UpdateSuperAdminPermissionJob } from 'src/jobs/update-super-admin-permission.job';
 
 @Module({
   imports: [
@@ -28,7 +29,8 @@ import { InsertRolePermissionJob } from 'src/jobs/insert-role-permission.job';
     SpaceRepetitionWorker,
     WithdrawalWorker,
     InsertRolePermissionJob,
+    UpdateSuperAdminPermissionJob,
   ],
-  exports: [InsertRolePermissionJob],
+  exports: [InsertRolePermissionJob, UpdateSuperAdminPermissionJob],
 })
 export class AutomationModule {}

@@ -50,6 +50,8 @@ export class AdminSettingService {
       iniInterval?: number;
       iniEasyInterval?: number;
       leechThreshold?: number;
+      percentCommission?: number;
+      feeUploadPer100Mb?: number;
     } = {};
 
     if (updateDto.webTitle !== undefined)
@@ -75,6 +77,10 @@ export class AdminSettingService {
       updateData.iniEasyInterval = updateDto.iniEasyInterval;
     if (updateDto.leechThreshold !== undefined)
       updateData.leechThreshold = updateDto.leechThreshold;
+    if (updateDto.percentCommission !== undefined)
+      updateData.percentCommission = updateDto.percentCommission;
+    if (updateDto.feeUploadPer100Mb !== undefined)
+      updateData.feeUploadPer100Mb = updateDto.feeUploadPer100Mb;
 
     const updatedSettings = await this.prisma.adminSetting.update({
       where: { id: settings.id },
