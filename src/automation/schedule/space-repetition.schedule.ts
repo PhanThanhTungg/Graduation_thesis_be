@@ -45,6 +45,7 @@ export class SpaceRepetitionJob {
               % ("spr_interval"::bigint / 60) = 0
           )
       `;
+      console.log('due', dueStudents);
 
       for (const student of dueStudents) {
         const message: SpaceRepetitionQuestionMessage = {
