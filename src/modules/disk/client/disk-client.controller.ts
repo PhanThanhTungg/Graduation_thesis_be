@@ -11,6 +11,7 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 import { PurchaseDiskSpaceDto } from './dto/purchase-disk-space.dto';
 import { GetDiskPurchaseHistoryDto } from './dto/get-disk-purchase-history.dto';
+import { GetTeacherFilesDto } from './dto/get-teacher-files.dto';
 
 @Controller('disk/client')
 @ApiTags('Client / Disk')
@@ -44,5 +45,15 @@ export class DiskClientController {
     @CurrentUser() user: currentClientUser,
   ) {
     return this.diskService.purchaseDiskSpace(dto, user);
+  }
+
+  @Get('files')
+  @ClientRoles(UserRole.teacher)
+  @ApiOperation({ summary: 'Get teacher uploaded files' })
+  async getTeacherFiles(
+    @Query() dto: GetTeacherFilesDto,
+    @CurrentUser() user: currentClientUser,
+  ) {
+    return this.diskService.getTeacherFiles(dto, user);
   }
 }

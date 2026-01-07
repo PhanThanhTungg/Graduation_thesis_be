@@ -8,6 +8,7 @@ import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 import { successResponse } from 'src/common/interfaces/response.interface';
 import { PurchaseDiskSpaceDto } from './dto/purchase-disk-space.dto';
 import { GetDiskPurchaseHistoryDto } from './dto/get-disk-purchase-history.dto';
+import { GetTeacherFilesDto } from './dto/get-teacher-files.dto';
 import {
   TransactionType,
   TransactionStatus,
@@ -283,6 +284,152 @@ export class DiskClientService {
     const response: successResponse = {
       message: 'Disk space purchased successfully',
       data: result,
+    };
+
+    return response;
+  }
+
+  async getTeacherFiles(
+    dto: GetTeacherFilesDto,
+    currentUser: currentClientUser,
+  ) {
+    const page = dto.page || 1;
+    const limit = dto.limit || 10;
+    const skip = (page - 1) * limit;
+
+    // Fetch both files and videos
+    const [files, videos] = await Promise.all([
+      this.prisma.file.findMany({
+        where: {
+          lesson: {
+            chapter: {
+              course: {
+                teacherId: currentUser.id,
+                deletedAt: null,
+              },
+            },
+          },
+        },
+        select: {
+          id: true,
+          fileName: true,
+          fileSize: true,
+          fileUrl: true,
+          createdAt: true,
+          lesson: {
+            select: {
+              title: true,
+              chapter: {
+                select: {
+                  title: true,
+                  course: {
+                    select: {
+                      title: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+      this.prisma.videoLesson.findMany({
+        where: {
+          lesson: {
+            chapter: {
+              course: {
+                teacherId: currentUser.id,
+                deletedAt: null,
+              },
+            },
+          },
+        },
+        select: {
+          id: true,
+          videoId: true,
+          embedUrl: true,
+          size: true,
+          duration: true,
+          createdAt: true,
+          lesson: {
+            select: {
+              title: true,
+              chapter: {
+                select: {
+                  title: true,
+                  course: {
+                    select: {
+                      title: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+    ]);
+
+    // Combine files and videos into a single array
+    const combinedItems = [
+      ...files.map((file) => ({
+        id: file.id,
+        name: file.fileName,
+        size: file.fileSize,
+        url: file.fileUrl,
+        type: 'file' as const,
+        createdAt: file.createdAt,
+        lessonTitle: file.lesson.title,
+        chapterTitle: file.lesson.chapter.title,
+        courseTitle: file.lesson.chapter.course.title,
+      })),
+      ...videos.map((video) => ({
+        id: video.id,
+        name: `Video: ${video.lesson.title}`,
+        size: video.size || 0,
+        url: video.embedUrl,
+        type: 'video' as const,
+        duration: video.duration,
+        createdAt: video.createdAt,
+        lessonTitle: video.lesson.title,
+        chapterTitle: video.lesson.chapter.title,
+        courseTitle: video.lesson.chapter.course.title,
+      })),
+    ];
+
+    // Sort by creation date (newest first)
+    combinedItems.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    // Apply pagination
+    const total = combinedItems.length;
+    const paginatedItems = combinedItems.slice(skip, skip + limit);
+
+    const formattedItems = paginatedItems.map((item) => ({
+      id: item.id,
+      name: item.name,
+      size: item.size,
+      url: item.url,
+      type: item.type,
+      duration: 'duration' in item ? item.duration : undefined,
+      createdAt: item.createdAt,
+      lessonTitle: item.lessonTitle,
+      chapterTitle: item.chapterTitle,
+      courseTitle: item.courseTitle,
+    }));
+
+    const totalPages = Math.ceil(total / limit);
+
+    const response: successResponse = {
+      message: 'Get teacher files successfully',
+      data: {
+        files: formattedItems,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+        },
+      },
     };
 
     return response;

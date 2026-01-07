@@ -539,6 +539,7 @@ enum TransactionType {
   withdrawal // Rút tiền 
   order 
   disk
+  upload
 }
 
 enum TransactionStatus {
