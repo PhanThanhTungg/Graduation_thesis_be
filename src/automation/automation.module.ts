@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SpaceRepetitionJob } from './schedule/space-repetition.schedule';
+import { AdminAnalyticsJob } from './schedule/admin-analytics.schedule';
 import { SpaceRepetitionWorker } from './workers/space-repetition.worker';
 import { WithdrawalWorker } from './workers/withdrawal.worker';
+import { AdminAnalyticsService } from './services/admin-analytics.service';
 import { PrismaModule } from 'src/shared/prisma/prisma.module';
 import { RabbitMQModule } from 'src/shared/rabbitmq/rabbitmq.module';
 import { TelegramModule } from 'src/modules/bot/telegram/telegram.module';
@@ -22,6 +24,8 @@ import { UpdateSuperAdminPermissionJob } from 'src/jobs/update-super-admin-permi
   ],
   providers: [
     SpaceRepetitionJob,
+    AdminAnalyticsJob,
+    AdminAnalyticsService,
     SpaceRepetitionWorker,
     WithdrawalWorker,
     InsertRolePermissionJob,
