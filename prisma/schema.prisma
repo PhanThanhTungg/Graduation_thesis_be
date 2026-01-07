@@ -888,3 +888,43 @@ model Friend {
   @@index([status])
   @@map("friend")
 }
+
+// -------------Analytics for Admin System-------------
+
+// Tổng quan toàn hệ thống - snapshot hiện tại
+model AdminAnalyticsOverview {
+  id       String @id @default(uuid())
+  
+  totalStudents   Int   @default(0) @map("total_students") // Tổng số học sinh
+  totalTeachers   Int   @default(0) @map("total_teachers") // Tổng số giáo viên
+  totalRevenue    Float @default(0) @map("total_revenue") // Tổng doanh thu
+  totalCourses    Int   @default(0) @map("total_courses") // Tổng số khóa học
+  totalPlatformFee Float @default(0) @map("total_platform_fee") // Tổng phí nền tảng thu được
+  
+  // Data dạng JSON
+  revenueByCategory             Json? @map("revenue_by_category") // Doanh thu theo danh mục: {categoryId, title, revenue}
+  top5TeachersByStudentCount    Json? @map("top5_teachers_by_student_count") // Top 5 giáo viên: [{teacherId, fullName, email, studentCount, courseCount, revenue}]
+  top5CoursesByStudentCount     Json? @map("top5_courses_by_student_count") // Top 5 khóa học: [{courseId, title, teacherFullName, studentCount, revenue, rating}]
+  
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+  
+  @@map("admin_analytics_overview")
+}
+
+// Thống kê theo ngày - dữ liệu trong ngày
+model AdminAnalytic {
+  id   String   @id @default(uuid())
+  date DateTime @db.Date @unique // Ngày thống kê
+  
+  revenue     Float @default(0) @map("revenue") // Doanh thu trong ngày
+  platformFee Float @default(0) @map("platform_fee") // Phí nền tảng thu trong ngày
+  student     Int   @default(0) @map("student") // Số học sinh mới trong ngày
+  teacher     Int   @default(0) @map("teacher") // Số giáo viên mới trong ngày
+  
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+  
+  @@index([date])
+  @@map("admin_analytic")
+}
