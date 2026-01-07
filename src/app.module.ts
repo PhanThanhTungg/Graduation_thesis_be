@@ -24,6 +24,7 @@ import { PaymentClientModule } from './modules/payment/client/payment-client.mod
 import { NoteClientModule } from './modules/note/client/note-client.module';
 import { StudentModule } from './modules/student/client/student.module';
 import { FinanceClientModule } from './modules/finance/client/finance-client.module';
+import { AdminFinanceModule } from './modules/finance/admin/admin-finance.module';
 import { DiskClientModule } from './modules/disk/client/disk-client.module';
 import { QuestionModule } from './modules/question/client/question-client.module';
 import { ReviewSpaceModule } from './modules/review-space/review-space.module';
@@ -63,6 +64,7 @@ import { AdminPermissionModule } from './modules/permission/admin/admin-permissi
     NoteClientModule,
     StudentModule,
     FinanceClientModule,
+    AdminFinanceModule,
     DiskClientModule,
     QuestionModule,
     ReviewSpaceModule,

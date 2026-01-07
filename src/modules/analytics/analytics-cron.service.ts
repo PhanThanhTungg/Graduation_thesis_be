@@ -7,89 +7,88 @@ import {
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { CronJob } from 'cron';
 
-// List of common timezones to collect analytics for
-// List of all IANA timezones (partial list for brevity, you can expand as needed)
-const SUPPORTED_TIMEZONES = [
-  'UTC',
-  'America/New_York',
-  'America/Chicago',
-  'America/Denver',
-  'America/Los_Angeles',
-  'America/Toronto',
-  'America/Vancouver',
-  'America/Sao_Paulo',
-  'Europe/London',
-  'Europe/Paris',
-  'Europe/Berlin',
-  'Europe/Madrid',
-  'Europe/Rome',
-  'Europe/Moscow',
-  'Europe/Istanbul',
-  'Europe/Athens',
-  'Asia/Dubai',
-  'Asia/Kolkata',
-  'Asia/Bangkok',
-  'Asia/Shanghai',
-  'Asia/Hong_Kong',
-  'Asia/Tokyo',
-  'Asia/Seoul',
-  'Asia/Singapore',
-  'Asia/Jakarta',
-  'Asia/Ho_Chi_Minh',
-  'Australia/Sydney',
-  'Australia/Melbourne',
-  'Africa/Johannesburg',
-  'Africa/Cairo',
-  'Pacific/Auckland',
-];
-
 @Injectable()
 export class AnalyticsCronService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(AnalyticsCronService.name);
-  private cronJobs: Map<string, CronJob> = new Map();
+  private cronJob: CronJob;
+  private supportedTimezones: string[] = [];
 
   constructor(private readonly prisma: PrismaService) {}
 
   onModuleInit() {
-    this.initializeCronJobs();
+    this.loadSupportedTimezones();
+    this.initializeCronJob();
   }
 
   onModuleDestroy() {
-    // Stop all cron jobs when module is destroyed
-    this.cronJobs.forEach((job, timezone) => {
-      job.stop();
-      this.logger.log(`Stopped cron job for timezone: ${timezone}`);
-    });
-  }
-
-  /**
-   * Initialize cron jobs for each timezone
-   * Each timezone will have its own cron job that runs at 23:59:59 local time
-   */
-  private initializeCronJobs() {
-    for (const timezone of SUPPORTED_TIMEZONES) {
-      // Create cron job for 23:59:59 in each timezone
-      const cronJob = new CronJob(
-        '59 59 23 * * *', // Run at 23:59:59 every day
-        () => this.collectAnalyticsForTimezone(timezone),
-        null,
-        true, // Start the job right now
-        timezone, // Set timezone
-      );
-
-      this.cronJobs.set(timezone, cronJob);
-      this.logger.log(`Initialized cron job for timezone: ${timezone}`);
+    if (this.cronJob) {
+      this.cronJob.stop();
+      this.logger.log('Stopped analytics cron job');
     }
   }
 
-  /**
-   * Collect and store analytics for a specific timezone
-   */
+  private loadSupportedTimezones() {
+    try {
+      this.supportedTimezones = Intl.supportedValuesOf('timeZone');
+      this.logger.log(
+        `Loaded ${this.supportedTimezones.length} supported timezones`,
+      );
+    } catch (error) {
+      this.logger.error('Error loading timezones:', error.message);
+      this.supportedTimezones = ['UTC'];
+      this.logger.warn('Using fallback timezone list: UTC only');
+    }
+  }
+
+  private initializeCronJob() {
+    this.cronJob = new CronJob(
+      '*/10 * * * * *',
+      () => this.checkAndCollectAnalytics(),
+      null,
+      true,
+    );
+
+    console.log('Initialized analytics cron job (runs hourly)');
+  }
+
+  private async checkAndCollectAnalytics() {
+    this.logger.log('Checking timezones for analytics collection...');
+
+    const now = new Date();
+    const timezonesInRange: string[] = [];
+
+    for (const timezone of this.supportedTimezones) {
+      try {
+        const localTime = new Date(
+          now.toLocaleString('en-US', { timeZone: timezone }),
+        );
+        const hour = localTime.getHours();
+        const currentHour = now.getHours();
+
+        if (hour === currentHour) {
+          timezonesInRange.push(timezone);
+        }
+      } catch (error) {
+        this.logger.error(
+          `Error checking timezone ${timezone}:`,
+          error.message,
+        );
+      }
+    }
+
+    console.log(
+      `Found ${timezonesInRange.length} timezones in range (23:00-23:59): ${timezonesInRange.join(', ')}`,
+    );
+
+    for (const timezone of timezonesInRange) {
+      await this.collectAnalyticsForTimezone(timezone);
+    }
+  }
+
   async collectAnalyticsForTimezone(timezone: string) {
     this.logger.log(`Starting analytics collection for timezone: ${timezone}`);
 
     try {
-      // Get all teachers
       const teachers = await this.prisma.user.findMany({
         where: {
           role: 'teacher',
@@ -102,7 +101,6 @@ export class AnalyticsCronService implements OnModuleInit, OnModuleDestroy {
         },
       });
 
-      // Filter teachers by matching timezone
       const relevantTeachers = teachers.filter(
         (teacher) => teacher.timezone === timezone,
       );
@@ -111,7 +109,6 @@ export class AnalyticsCronService implements OnModuleInit, OnModuleDestroy {
         `Found ${relevantTeachers.length} teachers for timezone ${timezone}`,
       );
 
-      // Collect analytics for each teacher
       for (const teacher of relevantTeachers) {
         await this.collectTeacherAnalytics(teacher.id, timezone);
       }
@@ -127,27 +124,21 @@ export class AnalyticsCronService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /**
-   * Collect analytics for a specific teacher
-   */
   async collectTeacherAnalytics(userId: string, timezone: string) {
     try {
       const today = new Date();
       const dateOnly = new Date(today.toISOString().split('T')[0]); // Get date without time
 
-      // Get today's date boundaries
       const startOfDay = new Date(today);
       startOfDay.setHours(0, 0, 0, 0);
       const endOfDay = new Date(today);
       endOfDay.setHours(23, 59, 59, 999);
 
-      // Calculate previous period for comparison (last 30 days)
       const previousStart = new Date(startOfDay);
       previousStart.setDate(previousStart.getDate() - 30);
       const previousEnd = new Date(startOfDay);
       previousEnd.setDate(previousEnd.getDate() - 1);
 
-      // Get teacher's courses
       const teacherCourses = await this.prisma.course.findMany({
         where: {
           teacherId: userId,
@@ -163,7 +154,6 @@ export class AnalyticsCronService implements OnModuleInit, OnModuleDestroy {
 
       const courseIds = teacherCourses.map((c) => c.id);
 
-      // Calculate revenue and orders
       const [currentOrders, previousOrders] = await Promise.all([
         this.prisma.order.aggregate({
           where: {
@@ -198,7 +188,6 @@ export class AnalyticsCronService implements OnModuleInit, OnModuleDestroy {
           ? ((totalRevenue - previousRevenue) / previousRevenue) * 100
           : 0;
 
-      // Get new students
       const [currentStudents, previousStudents] = await Promise.all([
         this.prisma.order.count({
           where: {
@@ -227,7 +216,6 @@ export class AnalyticsCronService implements OnModuleInit, OnModuleDestroy {
           ? ((currentStudents - previousStudents) / previousStudents) * 100
           : 0;
 
-      // Get active courses
       const activeCourses = await this.prisma.course.count({
         where: {
           teacherId: userId,
@@ -236,21 +224,18 @@ export class AnalyticsCronService implements OnModuleInit, OnModuleDestroy {
         },
       });
 
-      // Calculate average rating
       const avgRating =
         teacherCourses.length > 0
           ? teacherCourses.reduce((sum, c) => sum + c.rating, 0) /
             teacherCourses.length
           : 0;
 
-      // Get total reviews
       const totalReviews = await this.prisma.review.count({
         where: {
           courseId: { in: courseIds },
         },
       });
 
-      // Get total lessons
       const chapters = await this.prisma.chapter.findMany({
         where: {
           courseId: { in: courseIds },
@@ -265,7 +250,6 @@ export class AnalyticsCronService implements OnModuleInit, OnModuleDestroy {
         },
       });
 
-      // Calculate platform fees (10% commission)
       const totalFees = totalRevenue * 0.1;
       const previousFees = previousRevenue * 0.1;
       const feesChange =
@@ -273,14 +257,12 @@ export class AnalyticsCronService implements OnModuleInit, OnModuleDestroy {
           ? ((totalFees - previousFees) / previousFees) * 100
           : 0;
 
-      // Generate chart data for the day (orders and revenue per hour or summary)
       const chartData = {
         orders: currentOrders._count.id,
         revenue: totalRevenue,
         students: currentStudents,
       };
 
-      // Upsert analytics record
       await this.prisma.analytics.upsert({
         where: {
           date_timezone_userId: {
@@ -347,15 +329,12 @@ export class AnalyticsCronService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /**
-   * Manual trigger for collecting analytics (useful for testing or backfilling)
-   */
   async manualCollectAnalytics(timezone?: string) {
     if (timezone) {
       await this.collectAnalyticsForTimezone(timezone);
     } else {
       // Collect for all timezones
-      for (const tz of SUPPORTED_TIMEZONES) {
+      for (const tz of this.supportedTimezones) {
         await this.collectAnalyticsForTimezone(tz);
       }
     }

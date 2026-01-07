@@ -5,6 +5,7 @@ import { PrismaModule } from 'src/shared/prisma/prisma.module';
 
 @Module({
   imports: [PrismaModule, AnalyticsClientModule],
+  controllers: [],
   providers: [AnalyticsCronService],
   exports: [AnalyticsCronService, AnalyticsClientModule],
 })

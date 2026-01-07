@@ -1,10 +1,15 @@
-import { 
-  BadRequestException, 
-  Injectable, 
-  NotFoundException 
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { CreateReviewDto, CreateReviewReplyDto, UpdateReviewDto } from './dto/review.dto';
+import {
+  CreateReviewDto,
+  CreateReviewReplyDto,
+  UpdateReviewDto,
+} from './dto/review.dto';
 import { currentClientUser } from 'src/common/strategies/client-jwt.strategy';
 import { successResponse } from 'src/common/interfaces/response.interface';
 
@@ -15,7 +20,7 @@ export class ReviewService {
   async createReview(
     courseId: string,
     user: currentClientUser,
-    dto: CreateReviewDto
+    dto: CreateReviewDto,
   ) {
     try {
       // Use transaction to create review and update course rating atomically
@@ -28,6 +33,21 @@ export class ReviewService {
 
         if (!course) {
           throw new NotFoundException('Course not found');
+        }
+
+        // Check if user has purchased the course
+        const purchase = await tx.order.findFirst({
+          where: {
+            userId: user.id,
+            courseId: courseId,
+            status: 'success',
+          },
+        });
+
+        if (!purchase) {
+          throw new ForbiddenException(
+            'You must purchase this course before leaving a review',
+          );
         }
 
         // Create review - unique constraint will throw error if already exists
@@ -76,9 +96,7 @@ export class ReviewService {
     } catch (error) {
       // Handle unique constraint violation (P2002)
       if (error.code === 'P2002') {
-        throw new BadRequestException(
-          'You have already reviewed this course.'
-        );
+        throw new BadRequestException('You have already reviewed this course.');
       }
       throw error;
     }
@@ -91,7 +109,7 @@ export class ReviewService {
   async updateReview(
     courseId: string,
     user: currentClientUser,
-    dto: UpdateReviewDto
+    dto: UpdateReviewDto,
   ) {
     try {
       // Use transaction to update review and course rating atomically
@@ -149,7 +167,7 @@ export class ReviewService {
       // Handle record not found (P2025)
       if (error.code === 'P2025') {
         throw new NotFoundException(
-          'Review not found. You have not reviewed this course yet.'
+          'Review not found. You have not reviewed this course yet.',
         );
       }
       throw error;
@@ -164,7 +182,7 @@ export class ReviewService {
   async createReviewReply(
     reviewId: string,
     user: currentClientUser,
-    dto: CreateReviewReplyDto
+    dto: CreateReviewReplyDto,
   ) {
     try {
       // Create reply directly - foreign key constraint ensures review exists
@@ -274,11 +292,7 @@ export class ReviewService {
    * @param rating - Optional: Filter by specific rating (1-5)
    * @param limit - Number of reviews to return (default: 4, pass 0 or large number for all)
    */
-  async getCourseReviews(
-    courseId: string,
-    rating?: number,
-    limit: number = 4,
-  ) {
+  async getCourseReviews(courseId: string, rating?: number, limit: number = 4) {
     // Build where clause with optional rating filter
     const whereClause: any = {
       courseId,
