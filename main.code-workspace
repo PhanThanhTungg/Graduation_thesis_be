@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "Aikabis_BE"
+		},
+		{
+			"path": "Graduation_thesis_fe"
+		},
+		{
+			"path": "Chrome_extension"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "Graduation_thesis_fe"
+	}
+}

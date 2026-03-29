@@ -8,7 +8,7 @@ export class AdminAnalyticsJob {
 
   constructor(private readonly adminAnalyticsService: AdminAnalyticsService) {}
 
-  @Cron('02 10 * * *', {
+  @Cron('32 10 * * *', {
     name: 'admin-analytics-daily',
     timeZone: 'Asia/Bangkok', // UTC+7
   })
